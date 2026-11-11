@@ -3,10 +3,10 @@
 
   <!-- left: product surface -->
   <rect x="24" y="32" width="318" height="336" rx="16" fill="#FFFFFF" stroke="#E3E8EF"/>
-  <text x="44" y="62" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#8A93A0">DSH session · composer</text>
+  <text x="44" y="62" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#8A93A0">In context</text>
 
   <!-- catalog panel -->
-  <rect x="42" y="78" width="282" height="190" rx="12" fill="#FFFFFF" stroke="#E3E8EF"/>
+  <rect x="42" y="78" width="282" height="230" rx="12" fill="#FFFFFF" stroke="#E3E8EF"/>
   <text x="58" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#1F2329">Catalog</text>
   <circle cx="270" cy="99" r="4" fill="#2FBF71"/>
   <text x="280" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#6B7280">ready</text>
@@ -29,17 +29,8 @@
   <text x="292" y="197" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#1F2329">92</text>
 
   <text x="58" y="222" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" fill="#8A93A0">19 groups · catalog generated 2m ago</text>
+  <text x="58" y="252" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" fill="#8A93A0">Only this small directory stays in context.</text>
 
-  <!-- composer row -->
-  <rect x="42" y="286" width="282" height="44" rx="10" fill="#F7F9FC" stroke="#E6EBF2"/>
-  <rect x="56" y="298" width="20" height="20" rx="6" fill="#EEF3FF"/>
-  <path d="M61 303h7M61 307h7M61 311h4" stroke="#145AF3" stroke-width="1.6" stroke-linecap="round"/>
-  <text x="84" y="312" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#4B5563">92</text>
-  <text x="206" y="312" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#8A93A0">ask</text>
-  <rect x="266" y="296" width="42" height="24" rx="12" fill="#145AF3"/>
-  <text x="287" y="312" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#FFFFFF">send</text>
-
-  <text x="42" y="356" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#8A93A0">One small status control — no settings, no babysitting.</text>
 
   <!-- right: headline + metrics -->
   <text x="376" y="58" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#1F2329">Tool schemas stay out of context.</text>
