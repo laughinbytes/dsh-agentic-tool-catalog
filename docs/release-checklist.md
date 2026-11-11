@@ -23,7 +23,7 @@
 ## Blockers / decisions
 
 - npm authentication: `npm whoami` → **E401 Unauthorized**; `npm login` required before publishing.
-- Version: package is `0.3.0`; decide whether the first public release stays `0.3.0` or resets to `0.1.0`.
+- Version: **`0.3.1`** (same version internally and publicly; no separate internal/external version).
 - GitHub repository creation needs the account authenticated (the existing `dsh-host-ops` uses `laughinbytes`).
 
 ## Post-release

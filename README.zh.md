@@ -37,6 +37,8 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 ```
 
 - **新会话**创建时立即预热生成；**恢复的旧会话**在第一条用户消息/搜索时才生成；**目录变化**立即重新生成（优先增量）；
+- **生成由工具集决定，不是按时间**：同一份工具指纹只生成一次，结果缓存进官方 Storage，跨会话/重启复用；
+  **没有定时刷新**——只有工具集真的变了（装/卸插件、MCP server 上下线、preset 变化等）才会重新生成。
 - 工具用 `agent.ctx.tools.restrict({ deny })` 从模型请求中隐藏，`search_tools` 命中后通过 DSH 原生
   tool-addition 机制在会话中途释放；
 - 缓存走官方 `ctx.storageDomain`（domain `agentic_tool_catalog`）；若 profile 没有 storage 服务，

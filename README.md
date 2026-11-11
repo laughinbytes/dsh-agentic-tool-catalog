@@ -46,6 +46,9 @@ agent needs tools
 
 - **New sessions** start generation immediately (pre-warm); **restored sessions** generate on their first
   user message/search; **catalog changes** regenerate immediately (incremental first).
+- **Generation is keyed by the tool set, not by time**: one generation per unique tool fingerprint; the result is
+  cached in official Storage and reused across sessions/restarts. There is no periodic refresh — the timestamp
+  only moves when the tool set actually changes (install/remove a plugin or MCP server, preset change, etc.).
 - Tools are hidden from the model with `agent.ctx.tools.restrict({ deny })`; `search_tools` releases them
   through DSH's native mid-conversation tool-addition path.
 - The catalog cache lives in official DSH Storage (`ctx.storageDomain`, domain `agentic_tool_catalog`).
