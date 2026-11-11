@@ -18,6 +18,7 @@
     "README.zh.md",
     "cordis.patch.yml",
     "docs/assets/*",
+    "docs/assets/plugin-page.png",
     "docs/benchmark.md",
     "docs/data-card.md",
     "docs/detail-benchmark.svg",
