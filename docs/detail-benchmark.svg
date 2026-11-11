@@ -25,5 +25,6 @@
   <text x="478" y="252" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#145AF3">268,551 · −40.6%</text>
 
   <rect x="32" y="280" width="696" height="28" rx="8" fill="#E9EFFB"/>
-  <text x="46" y="299" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#33507A">Task success: 100% both arms · cost per session ≈ flat (+3.7%) · one-time background catalog generation not included in these task figures.</text>
+  <text x="46" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#33507A">Task success: 100% both arms · cost per session ≈ flat (+3.7%)</text>
+  <text x="46" y="309" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#33507A">One-time background catalog generation is not included in these task figures.</text>
 </svg>
