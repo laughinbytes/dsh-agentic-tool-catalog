@@ -3,7 +3,7 @@
 ## Preconditions
 
 - [x] Independent repository (this repo); package name `dsh-agentic-tool-catalog`
-- [x] npm name available (last check: HTTP 404 on registry, 2026-11-11)
+- [x] npm published: `dsh-agentic-tool-catalog@0.3.1` (latest, 2026-11-11)
 - [x] Package metadata: license, repository/homepage/bugs, keywords, engines, files
 - [x] `npm pack --dry-run`: 22 files, ~201 KB
 - [x] Tests: `npm test` (55 + 29), `npm run test:presentation`
@@ -22,7 +22,8 @@
 
 ## Blockers / decisions
 
-- npm authentication: `npm whoami` → **E401 Unauthorized**; `npm login` required before publishing.
+- [x] npm authentication: logged in as `sunlit_divorce`; OTP completed by user.
+- [x] npm publish succeeded (`0.3.1`, 23 files).
 - Version: **`0.3.1`** (same version internally and publicly; no separate internal/external version).
 - GitHub repository creation needs the account authenticated (the existing `dsh-host-ops` uses `laughinbytes`).
 
