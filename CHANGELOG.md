@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2026-11-11
+
+Documentation-only release: the plugin page was rewritten around the user's questions (what it
+does, what it saves, what to know), the product hero and benchmark charts were added, and the
+in-session screenshot section / implementation jargon were removed. No runtime behavior change.
+
 ## 0.3.0 — 2026-11-11
 
 Renamed from `dsh-tool-discovery` / Tool Discovery; public identity is now **Agentic Tool Catalog**.
