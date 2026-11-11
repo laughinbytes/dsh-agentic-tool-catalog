@@ -1,0 +1,4 @@
+node_modules/
+reference/tmp/
+*.tgz
+.DS_Store

@@ -1,0 +1,64 @@
+<svg width="760" height="400" viewBox="0 0 760 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="760" height="400" rx="20" fill="#F5F7FB"/>
+
+  <!-- left: product surface -->
+  <rect x="24" y="32" width="318" height="336" rx="16" fill="#FFFFFF" stroke="#E3E8EF"/>
+  <text x="44" y="62" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#8A93A0">DSH session · composer</text>
+
+  <!-- catalog panel -->
+  <rect x="42" y="78" width="282" height="190" rx="12" fill="#FFFFFF" stroke="#E3E8EF"/>
+  <text x="58" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#1F2329">Catalog</text>
+  <circle cx="270" cy="99" r="4" fill="#2FBF71"/>
+  <text x="280" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#6B7280">ready</text>
+
+  <rect x="58" y="118" width="250" height="6" rx="3" fill="#E9EDF2"/>
+  <rect x="58" y="118" width="80" height="6" rx="3" fill="#9AA6B5"/>
+  <rect x="138" y="118" width="20" height="6" rx="3" fill="#145AF3"/>
+  <rect x="158" y="118" width="150" height="6" rx="3" fill="#D8DEE7"/>
+
+  <circle cx="61" cy="145" r="4" fill="#9AA6B5"/>
+  <text x="72" y="149" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#6B7280">Always available</text>
+  <text x="292" y="149" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#1F2329">32</text>
+
+  <circle cx="61" cy="169" r="4" fill="#145AF3"/>
+  <text x="72" y="173" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#6B7280">Loaded</text>
+  <text x="292" y="173" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#1F2329">8</text>
+
+  <circle cx="61" cy="193" r="4" fill="#D8DEE7"/>
+  <text x="72" y="197" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#6B7280">On demand</text>
+  <text x="292" y="197" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#1F2329">92</text>
+
+  <text x="58" y="222" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" fill="#8A93A0">19 groups · catalog generated 2m ago</text>
+
+  <!-- composer row -->
+  <rect x="42" y="286" width="282" height="44" rx="10" fill="#F7F9FC" stroke="#E6EBF2"/>
+  <rect x="56" y="298" width="20" height="20" rx="6" fill="#EEF3FF"/>
+  <path d="M61 303h7M61 307h7M61 311h4" stroke="#145AF3" stroke-width="1.6" stroke-linecap="round"/>
+  <text x="84" y="312" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#4B5563">92</text>
+  <text x="206" y="312" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#8A93A0">ask the agent</text>
+  <rect x="266" y="296" width="42" height="24" rx="12" fill="#145AF3"/>
+  <text x="287" y="312" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#FFFFFF">send</text>
+
+  <text x="42" y="356" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#8A93A0">One small status control — no settings, no babysitting.</text>
+
+  <!-- right: headline + metrics -->
+  <text x="376" y="58" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#1F2329">Tool schemas stay out of context.</text>
+  <text x="376" y="82" font-family="system-ui, -apple-system, sans-serif" font-size="12.5" fill="#4B5563">An agent reads your tools, builds a catalog, and loads tools on demand.</text>
+
+  <rect x="376" y="104" width="344" height="72" rx="12" fill="#FFFFFF" stroke="#E3E8EF"/>
+  <text x="394" y="132" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#145AF3">−83%</text>
+  <text x="462" y="126" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#6B7280">tool-schema payload</text>
+  <text x="462" y="143" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#1F2329">131,390 → 21,877 chars</text>
+
+  <rect x="376" y="186" width="344" height="72" rx="12" fill="#FFFFFF" stroke="#E3E8EF"/>
+  <text x="394" y="214" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#145AF3">−62.6%</text>
+  <text x="486" y="208" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#6B7280">first-request prompt tokens</text>
+  <text x="486" y="225" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#1F2329">49,504 → 18,536 (real usage)</text>
+
+  <rect x="376" y="268" width="344" height="72" rx="12" fill="#FFFFFF" stroke="#E3E8EF"/>
+  <text x="394" y="296" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#145AF3">100%</text>
+  <text x="462" y="290" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#6B7280">task success, both arms</text>
+  <text x="462" y="307" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" fill="#1F2329">10/10 · 5 tasks × 2 runs</text>
+
+  <text x="376" y="366" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" fill="#8A93A0">Measured on DSH 0.2.2-rc.1 · deepseek-flash · same tasks, model and tool surface.</text>
+</svg>

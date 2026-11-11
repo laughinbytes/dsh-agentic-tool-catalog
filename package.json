@@ -1,0 +1,91 @@
+{
+  "name": "dsh-agentic-tool-catalog",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Agentic Tool Catalog for DSH: an agent builds and maintains a tool catalog; schemas stay out of context and tools load on demand.",
+  "icon": "./icon.svg",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+    "README.zh.md",
+    "cordis.patch.yml",
+    "docs/assets/*",
+    "docs/benchmark.md",
+    "docs/data-card.md",
+    "docs/detail-benchmark.svg",
+    "docs/detail-hero.svg",
+    "docs/detail.md",
+    "docs/detail.zh.md",
+    "icon.svg",
+    "lib/*.js",
+    "locale/*.json"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-scope": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+    "@deepseek-ai/schemastery": "~3.18.4",
+    "@deepseek-ai/dsh-storage-domain": "^0.2.2-rc.1",
+    "zod": "^4.4.3"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-scope": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laughinbytes/dsh-agentic-tool-catalog.git"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "tool-catalog",
+    "on-demand",
+    "mcp",
+    "context",
+    "agent"
+  ],
+  "author": "laughinbytes",
+  "homepage": "https://github.com/laughinbytes/dsh-agentic-tool-catalog#readme",
+  "bugs": {
+    "url": "https://github.com/laughinbytes/dsh-agentic-tool-catalog/issues"
+  },
+  "engines": {
+    "node": ">=22.19.0",
+    "dsh": ">=0.2.1-rc.2 || >=0.2.2-rc.1"
+  },
+  "scripts": {
+    "test": "node scripts/verify-agentic-tool-catalog.mjs && node scripts/verify-agentic-tool-catalog-schema.mjs",
+    "test:schema": "node scripts/verify-agentic-tool-catalog-schema.mjs",
+    "pack:check": "npm pack --dry-run",
+    "test:presentation": "node scripts/verify-presentation.mjs"
+  }
+}

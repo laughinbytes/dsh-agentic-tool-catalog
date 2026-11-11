@@ -1,0 +1,29 @@
+# dsh-agentic-tool-catalog —— 按需发现工具（tool search / 延迟加载）
+#
+# 本 bundle 只持有自己的插件行。MCP 能力由各自集成 bundle 持有
+# （谁集成、谁持有自己的组件）：
+#   - Cloudflare API MCP（OAuth）→ plugins/dsh-cloudflare
+#   - Google Workspace MCP → plugins/gws-mcp
+# 之前放在这里的 `mcp-cfapi` / `mcp-cfdocs` 两行已于 2026-11-10 移除
+# （Cloudflare 集成迁入 dsh-cloudflare 插件；cfdocs 已被 API MCP 的 docs 工具覆盖）。
+#
+# 注意：只有 `insert` 会新增行；带 `id` 的顶层条目是"覆盖已有行"语义。
+- insert:
+    - id: agentic-tool-catalog
+      name: 'dsh-agentic-tool-catalog'
+      config:
+        # 分组是插件运行时按策略自动推导的（默认 rules）：
+        #   mcp__<server>__* → mcp-<server>；其余按工具名自动聚类，归不进组的进 others。
+        # discovery 源码里没有任何插件工具名；新增 MCP/插件工具不需要改这里。
+        #
+        # 唯一可能需要改的：某个新工具必须"永远可见、不能按需"时，往这里追加一行
+        # （内置常驻白名单：bash/fs/jobs/skill/ask/todo/web/present/plan/delegation/
+        #  mcp-resources/Agent Teams 等）：
+        # extraKeepResident:
+        #   - some_new_tool
+        #
+        # 一次 search 最多加载 6 个工具（避免一次拉回 21 个 workspace 工具）。
+        maxResults: 6
+        # 生产：唯一策略 = 真 agent 自动分组（目录变化时后台生成一次、按目录指纹缓存、
+        # 跨重启磁盘缓存、last-known-good 降级、无外部模型依赖；旧策略已全部移除）。
+        # 详见 notes/2026-11-10-agent-strategy-production.md；benchmark 见 benchmark/discovery/。

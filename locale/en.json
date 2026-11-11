@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Agentic Tool Catalog",
+    "description": "An agent builds and maintains the tool catalog: keep tool schemas out of context, search the catalog and load tools on demand for the current session.",
+    "detail": "docs/detail.md"
+  }
+}

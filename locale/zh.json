@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Agent 工具目录",
+    "description": "由 Agent 自动生成并维护工具目录：工具 schema 默认不占上下文，按需搜索并加载到当前会话。",
+    "detail": "docs/detail.zh.md"
+  }
+}
