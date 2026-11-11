@@ -1,0 +1,161 @@
+{
+  "generatedBy": "agent",
+  "groups": [
+    {
+      "id": "browser-control",
+      "description": "Connect to Chrome, manage tabs and site trust, open pages, and navigate.",
+      "patterns": [
+        "browser_status",
+        "browser_tabs",
+        "browser_open",
+        "browser_attach",
+        "browser_close",
+        "browser_navigate",
+        "browser_grants"
+      ]
+    },
+    {
+      "id": "browser-observe",
+      "description": "Read page content, observe elements, screenshot, wait, and inspect console/network.",
+      "patterns": [
+        "browser_observe",
+        "browser_text",
+        "browser_screenshot",
+        "browser_wait",
+        "browser_console",
+        "browser_network"
+      ]
+    },
+    {
+      "id": "browser-act",
+      "description": "Click, type, fill forms, pick suggestions, hover, drag, scroll, press keys, upload, and handle dialogs.",
+      "patterns": [
+        "browser_click",
+        "browser_click_at",
+        "browser_type",
+        "browser_fill_form",
+        "browser_select",
+        "browser_pick",
+        "browser_hover",
+        "browser_drag",
+        "browser_scroll",
+        "browser_key",
+        "browser_upload",
+        "browser_dialog"
+      ]
+    },
+    {
+      "id": "browser-assist",
+      "description": "AI-assisted element finding and risk-decision review.",
+      "patterns": [
+        "browser_advise",
+        "browser_find",
+        "browser_review"
+      ]
+    },
+    {
+      "id": "google-mail",
+      "description": "Search, read, draft, send, label, and download Gmail messages and attachments.",
+      "patterns": [
+        "mcp__workspace__gmail_*"
+      ]
+    },
+    {
+      "id": "google-calendar",
+      "description": "List calendars and events, schedule or update meetings, RSVP, and find free time.",
+      "patterns": [
+        "mcp__workspace__calendar_*"
+      ]
+    },
+    {
+      "id": "google-auth",
+      "description": "Refresh or clear the Google Workspace account credentials.",
+      "patterns": [
+        "mcp__workspace__auth_*"
+      ]
+    },
+    {
+      "id": "exhibits",
+      "description": "Create, update, list, open, export, and handle feedback on Exhibits docs, slides, web pages, and dashboards.",
+      "patterns": [
+        "exhibits_*"
+      ]
+    },
+    {
+      "id": "terminal",
+      "description": "Open and drive persistent terminal sessions: send and read output, signal, list, and close.",
+      "patterns": [
+        "terminal_*"
+      ]
+    },
+    {
+      "id": "sessions",
+      "description": "Search, read, trace, and manage DSH sessions and workspaces.",
+      "patterns": [
+        "session_*",
+        "dsh_session_manage",
+        "dsh_workspace_manage"
+      ]
+    },
+    {
+      "id": "dsh-runtime",
+      "description": "Manage DSH plugins and profile config rows; inspect live runtime services and slots.",
+      "patterns": [
+        "plugin_manager",
+        "plugin_market",
+        "cordis_inspect_list",
+        "cordis_inspect_query",
+        "dsh_config_manage"
+      ]
+    },
+    {
+      "id": "cloudflare",
+      "description": "Search Cloudflare docs and API specs, run account API calls, and check identity.",
+      "patterns": [
+        "mcp__cfapi__*",
+        "mcp__cfdocs__*"
+      ]
+    },
+    {
+      "id": "goals-schedules",
+      "description": "Create, pause, or complete session goals and schedule recurring or one-off task prompts.",
+      "patterns": [
+        "get_goal",
+        "create_goal",
+        "update_goal",
+        "schedule_*"
+      ]
+    },
+    {
+      "id": "subagents",
+      "description": "Run subagent workflows or Ralph loops and inspect available subagent models.",
+      "patterns": [
+        "workflow",
+        "ralph",
+        "list_subagent_models"
+      ]
+    },
+    {
+      "id": "human-interaction",
+      "description": "Show optional action cards and manage human approvals or questions in the WeChat channel.",
+      "patterns": [
+        "channel_workers",
+        "propose_action"
+      ]
+    },
+    {
+      "id": "git-worktrees",
+      "description": "Create a Git branch and worktree and switch this session into it.",
+      "patterns": [
+        "create_worktree"
+      ]
+    },
+    {
+      "id": "desktop-control",
+      "description": "Inspect and control macOS apps via accessibility state, screenshots, and input.",
+      "patterns": [
+        "cua"
+      ]
+    }
+  ]
+}

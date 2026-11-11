@@ -1,0 +1,16 @@
+{
+  "runId": "baseline-resident__workspace-calendar-count__r2__20261111-103146",
+  "arm": "baseline-resident",
+  "armTitle": "数据卡 baseline：所有工具常驻上下文（等价“不用按需目录”）",
+  "armStatus": "ready",
+  "taskId": "workspace-calendar-count",
+  "taskTitle": "列出日历数量",
+  "family": "mcp-workspace",
+  "rep": 2,
+  "prompt": "请列一下我 Google 账号下有哪些日历，把日历数量写进当前目录的 calendars.txt（只写数字）。不要用 bash、web_search、web_fetch，只能用 DSH 里已经接好的能力。\n\n注意：本任务禁止使用这些工具：bash、web_search、web_fetch。\n\n当前工作目录就是本次实验目录（所有输出文件都写在这里）。完成后简短说明你用了哪些能力，然后结束。",
+  "workdir": "/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/baseline-resident__workspace-calendar-count__r2__20261111-103146",
+  "createdAt": "2026-11-11T02:31:46.745Z",
+  "repoHead": "38fd12f",
+  "note": "",
+  "sessionId": null
+}

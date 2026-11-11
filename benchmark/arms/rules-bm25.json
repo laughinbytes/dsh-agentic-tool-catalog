@@ -1,0 +1,4 @@
+{
+  "strategy": "rules-bm25",
+  "note": "rules 分组 + BM25 检索（混合）"
+}

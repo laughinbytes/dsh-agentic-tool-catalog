@@ -1,0 +1,265 @@
+{
+  "runId": "full-combo__docs-workers-limit__r1__20261110-171333",
+  "arm": "full-combo",
+  "armTitle": "组合：结构 + rules + BM25 + Jev 判组 + 低置信重排",
+  "armStatus": "ready",
+  "taskId": "docs-workers-limit",
+  "taskTitle": "Cloudflare Workers 免费计划每日请求上限",
+  "family": "cfdocs",
+  "rep": 1,
+  "prompt": "请查一下 Cloudflare Workers 免费计划（Free plan）每天的请求上限是多少，把数字写进当前目录的 cf_limit.txt（只写数字，例如 12345）。不要用 bash、web_search、web_fetch，只能用 DSH 里已经接好的 Cloudflare 能力。\n\n注意：本任务禁止使用这些工具：bash、web_search、web_fetch。\n\n当前工作目录就是本次实验目录（所有输出文件都写在这里）。完成后简短说明你用了哪些能力，然后结束。",
+  "workdir": "/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/full-combo__docs-workers-limit__r1__20261110-171333",
+  "createdAt": "2026-11-10T09:13:33.203Z",
+  "repoHead": "b0ac310",
+  "note": "",
+  "sessionId": "session-c633b1fa-920d-4115-b75c-f3f0e35b5fbd",
+  "finishedAt": "2026-11-10T09:14:03.849Z",
+  "verify": {
+    "ok": true,
+    "checks": [
+      {
+        "ok": true,
+        "label": "cf_limit.txt 存在"
+      },
+      {
+        "ok": true,
+        "label": "cf_limit.txt 匹配 /^\\s*100[,\\s]?000\\s*$/",
+        "detail": ""
+      }
+    ]
+  },
+  "metrics": {
+    "sessionId": "session-c633b1fa-920d-4115-b75c-f3f0e35b5fbd",
+    "logFile": "/Users/chuang/.dsh/sessions/--Users-chuang-Documents-deepseek-harness-dsh-dev-benchmark-discovery-work-full-combo__docs-workers-limit__r1__20261110-171333--/session-c633b1fa-920d-4115-b75c-f3f0e35b5fbd/session.v4.jsonl.zstd",
+    "badLines": 0,
+    "cwd": "/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/full-combo__docs-workers-limit__r1__20261110-171333",
+    "origin": null,
+    "model": "deepseek-flash",
+    "provider": "deepseek-account",
+    "reasoningEffort": "max",
+    "turns": 1,
+    "steps": 5,
+    "tokens": {
+      "inputTokens": 22392,
+      "cacheReadTokens": 135680,
+      "outputTokens": 959,
+      "cacheWriteTokens": 0
+    },
+    "costUsd": 0.00868248,
+    "firstRequestTools": {
+      "count": 34,
+      "chars": 22909
+    },
+    "maxRequestTools": {
+      "count": 54,
+      "chars": 47760
+    },
+    "addedTools": [
+      "channel_workers",
+      "exhibits_create",
+      "exhibits_feedback",
+      "mcp__cfapi__docs",
+      "mcp__cfapi__execute",
+      "mcp__cfapi__search",
+      "mcp__cfapi__whoami",
+      "mcp__cfdocs__migrate_pages_to_workers_guide",
+      "mcp__cfdocs__search_cloudflare_documentation",
+      "mcp__workspace__auth_refreshToken",
+      "mcp__workspace__calendar_deleteEvent",
+      "mcp__workspace__calendar_getEvent",
+      "mcp__workspace__calendar_list",
+      "mcp__workspace__calendar_listEvents",
+      "mcp__workspace__calendar_respondToEvent",
+      "mcp__workspace__gmail_createDraft",
+      "mcp__workspace__gmail_search",
+      "mcp__workspace__gmail_send",
+      "mcp__workspace__gmail_sendDraft",
+      "ralph"
+    ],
+    "toolAdditionEvents": [
+      "channel_workers",
+      "exhibits_create",
+      "exhibits_feedback",
+      "mcp__cfapi__docs",
+      "mcp__cfapi__execute",
+      "mcp__cfapi__search",
+      "mcp__cfapi__whoami",
+      "mcp__cfdocs__migrate_pages_to_workers_guide",
+      "mcp__cfdocs__search_cloudflare_documentation",
+      "mcp__workspace__auth_refreshToken",
+      "mcp__workspace__calendar_deleteEvent",
+      "mcp__workspace__calendar_getEvent",
+      "mcp__workspace__calendar_list",
+      "mcp__workspace__calendar_listEvents",
+      "mcp__workspace__calendar_respondToEvent",
+      "mcp__workspace__gmail_createDraft",
+      "mcp__workspace__gmail_search",
+      "mcp__workspace__gmail_send",
+      "mcp__workspace__gmail_sendDraft",
+      "ralph"
+    ],
+    "searchCalls": [
+      {
+        "query": "cloudflare docs workers limits",
+        "limit": 10,
+        "resultChars": 2574,
+        "loadedCount": 10,
+        "loadedTools": [
+          "mcp__cfdocs__search_cloudflare_documentation",
+          "mcp__cfapi__docs",
+          "ralph",
+          "mcp__cfapi__execute",
+          "mcp__cfapi__search",
+          "exhibits_feedback",
+          "mcp__cfapi__whoami",
+          "exhibits_create",
+          "channel_workers",
+          "mcp__cfdocs__migrate_pages_to_workers_guide"
+        ],
+        "ok": true
+      },
+      {
+        "query": "mcp-cfdocs mcp-cfapi",
+        "limit": 10,
+        "resultChars": 945,
+        "loadedCount": 10,
+        "loadedTools": [
+          "mcp__workspace__gmail_send",
+          "mcp__workspace__gmail_createDraft",
+          "mcp__workspace__auth_refreshToken",
+          "mcp__workspace__calendar_deleteEvent",
+          "mcp__workspace__gmail_sendDraft",
+          "mcp__workspace__calendar_list",
+          "mcp__workspace__calendar_getEvent",
+          "mcp__workspace__gmail_search",
+          "mcp__workspace__calendar_listEvents",
+          "mcp__workspace__calendar_respondToEvent"
+        ],
+        "ok": true
+      }
+    ],
+    "loadedTools": [
+      "channel_workers",
+      "exhibits_create",
+      "exhibits_feedback",
+      "mcp__cfapi__docs",
+      "mcp__cfapi__execute",
+      "mcp__cfapi__search",
+      "mcp__cfapi__whoami",
+      "mcp__cfdocs__migrate_pages_to_workers_guide",
+      "mcp__cfdocs__search_cloudflare_documentation",
+      "mcp__workspace__auth_refreshToken",
+      "mcp__workspace__calendar_deleteEvent",
+      "mcp__workspace__calendar_getEvent",
+      "mcp__workspace__calendar_list",
+      "mcp__workspace__calendar_listEvents",
+      "mcp__workspace__calendar_respondToEvent",
+      "mcp__workspace__gmail_createDraft",
+      "mcp__workspace__gmail_search",
+      "mcp__workspace__gmail_send",
+      "mcp__workspace__gmail_sendDraft",
+      "ralph"
+    ],
+    "toolCalls": [
+      {
+        "callId": "call_00_HeAFjXSSxaX0CxAgFLcR9826",
+        "name": "search_tools",
+        "arguments": "{\"query\": \"cloudflare docs workers limits\", \"limit\": 10}",
+        "time": 1794302021266,
+        "durationMs": 7,
+        "ok": true,
+        "resultChars": 2574,
+        "resultText": "Loaded 10 tool(s) for this session — call them directly now:\n- mcp__cfdocs__search_cloudflare_documentation: Search the Cloudflare documentation. This tool should be used to answer any question about Cloudflare products or features, including: - Workers, Pages, R2, Images, Stream, D1, Durable Objects, KV, Workflows, Hyperdrive, Queues - AI Search…\n- mcp__cfapi__docs: Search the Cloudflare documentation. This tool should be used to answer any question about Cloudflare products or features, including: - Workers, Pages, R2, Images, Stream, D1, Durable Objects, KV, Workflows, Hyperdrive, Queues - AI Search…\n- ralph: Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks for Ralph or fresh-agent iteration. Each round opens a new child with no parent conversation or prior child session; the…\n- mcp__cfapi__execute: Execute JavaScript code that can read, create, update, or delete resources through the Cloudflare API. First use the 'search' tool to find the right endpoints, then write code using the cloudflare.request() function. Available in your code…\n- mcp__cfapi__search: Search the Cloudflare OpenAPI spec. All $refs are pre-resolved inline. Response schemas describe the body as the API sends it, usually Cloudflare's envelope: `{ success, errors, messages, result }`, plus `result_info` on paginated lists. P…\n- exhibits_feedback: Read and process feedback (意见 / Feedback) on an Exhibits doc, slides or web artifact. Use action \"list\" to read feedback items (default: open ones) with their selected text / slide index / web selector+snippet, instruction and thread; edit…\n- mcp__cfapi__whoami: Return the Cloudflare user or account that this connection is authenticated as. Takes no arguments. The id is stable across token refresh, reconnection and permission changes.\n- exhibits_create: Create a local Exhibits artifact: a directory under <workspace>/exhibits/<id>/ with manifest.json and an immutable version snapshot. kind \"web\": code-first interactive single-page app — pass html and/or files (entry defaults to index.html)…\n- channel_workers: Manage the background sessions (workers) and pending human interactions of this WeChat channel. Use natural-language requests from the user to list/watch/steer/stop workers, and to list/answer/cancel pending interactions (approval or quest…\n- mcp__cfdocs__migrate_pages_to_workers_guide: ALWAYS read this guide before migrating Pages projects to Workers.\n1 more tool(s) matched; search again with a narrower query (or a higher limit) to load them."
+      },
+      {
+        "callId": "call_01_wOzuTu9prKqIz0vfL29d0759",
+        "name": "search_tools",
+        "arguments": "{\"query\": \"mcp-cfdocs mcp-cfapi\", \"limit\": 10}",
+        "time": 1794302021274,
+        "durationMs": 5,
+        "ok": true,
+        "resultChars": 945,
+        "resultText": "Loaded 10 tool(s) for this session — call them directly now:\n- mcp__workspace__gmail_send: Send an email message.\n- mcp__workspace__gmail_createDraft: Create a draft email message.\n- mcp__workspace__auth_refreshToken: Manually triggers the token refresh process.\n- mcp__workspace__calendar_deleteEvent: Deletes an event from a calendar.\n- mcp__workspace__gmail_sendDraft: Send a previously created draft email.\n- mcp__workspace__calendar_list: Lists all of the user's calendars.\n- mcp__workspace__calendar_getEvent: Gets the details of a specific calendar event.\n- mcp__workspace__gmail_search: Search for emails in Gmail using query parameters.\n- mcp__workspace__calendar_listEvents: Lists events from a calendar. Defaults to upcoming events.\n- mcp__workspace__calendar_respondToEvent: Responds to a meeting invitation (accept, decline, or tentative).\n1 more tool(s) matched; search again with a narrower query (or a higher limit) to load them."
+      },
+      {
+        "callId": "call_00_e6Yrq5siUI6g0n2EDgQi5201",
+        "name": "mcp__cfapi__docs",
+        "arguments": "{\"query\": \"Workers Free plan daily request limit 100000 requests per day limits\"}",
+        "time": 1794302023358,
+        "durationMs": 3783,
+        "ok": true,
+        "resultChars": 16455,
+        "resultText": "<result>\n<url>https://developers.cloudflare.com/workers/platform/limits/</url>\n<title>Limits</title>\n<text>\n## Daily requests\n\nWorkers scale automatically across the Cloudflare global network. There is no general limit on requests per second.\n\nAccounts on the Workers Free plan have a daily request limit of 100,000 requests, resetting at midnight UTC. When a Worker exceeds this limit, Cloudflare returns **Error 1027**.\n\n| Route mode  | Behavior                                                                      |\n| ----------- | ----------------------------------------------------------------------------- |\n| Fail open   | Bypasses the Worker. Requests behave as if no Worker is configured.           |\n| Fail closed | Returns a Cloudflare 1027 error page. Use this for security-critical Workers. |\n\nYou can configure the fail mode by toggling the corresponding [route](/workers/configuration/routing/routes/).\n\n---\n\n## Subrequests\n\nA subrequest is any request a Worker makes using the [Fetch API](/workers/runtime-apis/fetch/) or to Cloudflare services like [R2](/r2/), [KV](/kv/), or [D1](/d1/).\n\n\n| Feature                                                                     | Workers Free | Workers Paid               |\n| --------------------------------------------------------------------------- | ------------ | -------------------------- |\n| [Requests](#daily-requests)                                                 | 100,000/day  | No limit                   |\n| [CPU time](#cpu-time)                                                       | 10 ms        | 5 min                      |\n| [Memory](#memory)                                                           | 128 MB       | 128 MB                     |\n| [Subrequests](#subrequests)                                                 | 50/request   | 10,000/request             |\n| [Simultaneous outgoing connections/request](#simultaneous-open-connections) | 6            | 6                          |\n| [Environment variables](#environment-variables)                             | 64/Worker    | 128/Worker                 |\n| [Environment variable size](#environment-variables)                         | 5 KB         | 5 KB                       |\n| [Worker size](#worker-size)                                                 | 64 MiB       | 64 MiB                     |\n| [Worker startup time](#worker-startup-time)                                 | 1 second     | 1 second                   |\n| [Number of Workers](#number-of-workers)                                     | 100          | 500[1](#user-content-fn-1) |\n| Number of [Cron Triggers](/workers/configuration/cron-triggers/)per account | 5            | 250                        |\n| Number of [Static Asset](#static-assets) files per Worker version           | 20,000       | 100,000                    |\n| Individual [Static Asset](#static-assets) file size                         | 25 MiB       | 25 MiB                     |\n\nNeed a higher limit?\n\n\n## Subrequests\n\nA subrequest is any request a Worker makes using the [Fetch API](/workers/runtime-apis/fetch/) or to Cloudflare services like [R2](/r2/), [KV](/kv/), or [D1](/d1/).\n\n| Limit                            | Workers Free | Workers Paid                              |\n| -------------------------------- | ------------ | ----------------------------------------- |\n| Subrequests per invocation       | 50           | 10,000 (up to 10M)                        |\n| Subrequests to internal services | 1,000        | Matches configured limit (default 10,000) |\n\nEach subrequest in a redirect chain counts against this limit. The total number of subrequests may exceed the number of `fetch()` calls in your code. You can change the subrequest limit per Worker using the [limits configuration](/workers/wrangler/configuration/#limits) in your Wrangler configuration file.\n\nThere is no set time limit on individual subrequests. As long as the client remains connected, the Worker can continue making subrequests. When the client disconnects or the response is complete, outstanding work may be canceled unless it is passed to [ctx.waitUntil()](/workers/runtime-apis/context/#waituntil), which can extend execution for up to 30 seconds.\n\n### Worker-to-Worker subrequests\n\nUse [Service Bindings](/workers/runtime-apis/bindings/service-bindings/) to send requests from one Worker to another on your account without going over the Internet.\n\n\n## Request and response limits\n\n| Limit                | Value             |\n| -------------------- | ----------------- |\n| URL size             | 16 KB             |\n| Request header size  | 128 KB (total)    |\n| Response header size | 128 KB (total)    |\n| Response body size   | No enforced limit |\n\nFor incoming requests to a Worker on your domain, request body size limits depend on the domain's Cloudflare plan, not your Workers plan. Requests exceeding these limits return a [413 Request entity too large](/support/troubleshooting/http-status-codes/4xx-client-error/error-413/#cloudflare-specific-information) error.\n\n| Cloudflare Plan | Maximum request body size |\n| --------------- | ------------------------- |\n| Free            | 100 MB                    |\n| Pro             | 100 MB                    |\n| Business        | 200 MB                    |\n| Enterprise      | Up to 5 GB (self-serve)   |\n\nEnterprise customers can adjust the maximum request body size up to 5 GB themselves from the zone's **Network** page (**Maximum Upload Size**). For limits above 5 GB, contact your account team or [Cloudflare Support](/support/contacting-cloudflare-support/).\n\nCloudflare limits each HTTP request body sent to an external service by a [Durable Object](/durable-objects/platform/limits/#outbound-http-request-body-size) or through a [Container outbound handler](/containers/platform/limits/#outbound-http-request-body-size) to **100 MiB by default**. Increasing **Maximum Upload Size** for your domain does not increase this limit. Refer to the product limits for upload guidance and how to request an increase.\n\nCloudflare does not enforce response body size limits. [CDN cache limits](/cache/concepts/default-cache-behavior/) apply: 512 MB for Free, Pro, and Business plans, and 5 GB for Enterprise.\n\n---\n\n## CPU time\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/changelog/post/2026-02-11-subrequests-limit/</url>\n<title>2026 02 11 Subrequests Limit</title>\n<text>\n## Workers are no longer limited to 1000 subrequests\n\n[Workers](/workers/)\n\nCopy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nWorkers no longer have a limit of 1000 subrequests per invocation, allowing you to make more `fetch()` calls or requests to Cloudflare services on every incoming request. This is especially important for long-running Workers requests, such as open websockets on [Durable Objects](/durable-objects) or long-running [Workflows](/workflows), as these could often exceed this limit and error.\n\nBy default, Workers on paid plans are now limited to 10,000 subrequests per invocation, but this limit can be increased up to 10 million by setting the new `subrequests` limit in your Wrangler configuration file.\n\n```jsonc\n{\n\t\"limits\": {\n\t\t\"subrequests\": 50000,\n\t},\n}\n```\n\n```toml\n[limits]\nsubrequests = 50_000\n```\n\nWorkers on the free plan remain limited to 50 external subrequests and 1000 subrequests to Cloudflare services per invocation.\n\nTo protect against runaway code or unexpected costs, you can also set a lower limit for both subrequests and CPU usage.\n\n```jsonc\n{\n\t\"limits\": {\n\t\t\"subrequests\": 10,\n\t\t\"cpu_ms\": 1000,\n\t},\n}\n```\n\n```toml\n[limits]\nsubrequests = 10\ncpu_ms = 1_000\n```\n\nFor more information, refer to the [Wrangler configuration documentation for limits](/workers/wrangler/configuration/#limits) and [subrequest limits](/workers/platform/limits/#subrequests).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/browser-run/limits/</url>\n<title>Limits</title>\n<text>\n# Limits\n\nLast updated Oct 14, 2026|Copy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nBrowser Run limits are based on your [Cloudflare Workers plan](/workers/platform/pricing/).\n\nFor pricing information, refer to [Browser Run pricing](/browser-run/pricing/).\n\n## Workers Free\n\nNeed higher limits?\n\nIf you are on a Workers Free plan and you want to increase your limits, upgrade to a Workers Paid plan in the **Workers plans** page of the Cloudflare dashboard:\n\n[Go to **Workers plans** ↗ ](https://dash.cloudflare.com/?to=/:account/workers/plans)\n\n| Feature                                                                         | Limit                              |\n| ------------------------------------------------------------------------------- | ---------------------------------- |\n| Browser hours                                                                   | 10 minutes per day                 |\n| Concurrent browsers per account (Browser Sessions only) [1](#user-content-fn-1) | 3 per account                      |\n| New browser instances (Browser Sessions only)                                   | 1 every 20 seconds                 |\n| Browser timeout                                                                 | 60 seconds [2](#user-content-fn-2) |\n| Total requests (Quick Actions only) [3](#user-content-fn-3)                     | 1 every 10 seconds                 |\n\n### `/crawl` endpoint limits\n\nThe [/crawl endpoint](/browser-run/quick-actions/crawl-endpoint/) has additional limits for Workers Free plan users:\n\n| Feature                 | Limit     |\n| ----------------------- | --------- |\n| Crawl jobs per day      | 5 per day |\n| Maximum pages per crawl | 100 pages |\n\n## Workers Paid\n\nNeed higher limits?\n\nThe limits below are defaults for Workers Paid users. If you need to scale beyond them, Cloudflare can increase your account limits. [Request higher limits ↗︎](https://forms.gle/CdueDKvb26mTaepa9).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/workflows/reference/limits/</url>\n<title>Limits</title>\n<text>\n### Increasing Workflow subrequest limits\n\nA subrequest is any request that a Workflow makes to either Internet resources using the [Fetch API](/workers/runtime-apis/fetch/) or requests to other Cloudflare services like [R2](/r2/), [KV](/kv/), or [D1](/d1/). Because Workflows are long-running and often make many calls to external services or Cloudflare APIs, they can exceed the default subrequest limit.\n\nIf your Workflow exceeds its subrequest limit, it will throw the following error:\n\n```txt\nError: Too many subrequests.\n```\n\nThis will appear as `exceededResources` in [Workers metrics](/workers/observability/metrics-and-analytics/#invocation-statuses) and as `exception` in [wrangler tail](/workers/wrangler/commands/general/#tail) outcomes.\n\nBy default, the maximum number of subrequests per Workflow instance is 10,000 on Workers Paid plans, but this can be increased up to 10 million by setting `limits.subrequests` in your Wrangler configuration:\n\n```jsonc\n{\n\t// ...rest of your configuration...\n\t\"limits\": {\n\t\t\"subrequests\": 10000000, // 10 million (maximum)\n\t},\n\t// ...rest of your configuration...\n}\n```\n\n```toml\n[limits]\nsubrequests = 10_000_000\n```\n\nWorkers on the free plan remain limited to 50 external subrequests and 1,000 subrequests to Cloudflare services per invocation.\n\nTo learn more about subrequest limits, [review the Workers documentation](/workers/platform/limits/#subrequests).\n\n## Wall time limits by invocation type\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/ai-search/platform/limits-pricing/</url>\n<title>Limits Pricing</title>\n<text>\n| Metadata per vector                                      | 10 KiB total, including system overhead | 10 KiB total, including system overhead                                                                 |\n| Filterable indexed string data                           | First 64 UTF-8 bytes per string         | First 64 UTF-8 bytes per string                                                                         |\n\nWebsite crawling is bounded by several of these limits at once. A `discover` crawl accepts up to 100,000 pages, but the files per instance and maximum pages crawled per day limits also apply, so the number of pages you end up with is whichever of those values is lowest. On Workers Free, the daily limit of 500 pages is the binding one.\n\nFor the limits that apply only to website data sources, refer to [Website](/ai-search/configuration/data-source/website/#limits).\n\nNeed a higher limit?\n\nTo request an adjustment to a limit, complete the [Limit Increase Request Form ↗︎](https://forms.gle/wnizxrEUW33Y15CT8). If the limit can be increased, Cloudflare will contact you with next steps.\n\n## Pricing\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/workers/observability/logs/workers-logs/</url>\n<title>Workers Logs</title>\n<text>\n## Limits\n\n| Description                       | Limit     |\n| --------------------------------- | --------- |\n| Maximum log retention period      | 7 Days    |\n| Maximum logs per account per day1 | 5 Billion |\n| Maximum log size2                 | 256 KB    |\n\n1 There is a daily limit of 5 billion logs per account per day. After the limit is exceed, a 1% head-based sample will be applied for the remainder of the day.\n\n2 A single log has a maximum size limit of [256 KB](/workers/platform/limits/#log-size). Logs exceeding that size will be truncated and the log's `$cloudflare.truncated` field will be set to true.\n\n## Pricing\n\nWorkers Logs is included in both the Free and Paid [Workers plans](/workers/platform/pricing/).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/changelog/post/2026-09-01-d1-free-tier-limit-enforcement/</url>\n<title>2026 09 01 D1 Free Tier Limit Enforcement</title>\n<text>\n## D1 enforces free tier daily query limits\n\n[D1](/d1/)\n\nCopy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nBeginning September 1, 2026, D1 queries on the [Workers Free plan](/workers/platform/pricing/#workers) will fail when an account exceeds the daily [row read or row write limits](/d1/platform/pricing/). Queries via the [Workers Binding API](/d1/worker-api/) and the [REST API](/api/resources/d1/subresources/database/methods/create/) will return errors until the limit resets at midnight UTC. Stored data is not affected.\n\nYou will receive email alerts when the daily limit is reached. The following errors indicate that a limit has been exceeded:\n\n| Error                                                                                                                                     | Description                                        |\n| ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |\n| Your account has exceeded D1's free tier daily row read limit. Upgrade to a paid plan or wait until tomorrow (midnight UTC) to continue.  | The account has reached its daily row read limit.  |\n| Your account has exceeded D1's free tier daily row write limit. Upgrade to a paid plan or wait until tomorrow (midnight UTC) to continue. | The account has reached its daily row write limit. |\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/workers-vpc/platform/limits/</url>\n<title>Limits</title>\n<text>\n---\ndescription: Account-level limits for VPC Services and applicable Workers request limits.\ntitle: Limits\nimage: https://developers.cloudflare.com/og-docs.png\n---\n\n[Skip to content](#main-content)\n\n> Documentation Index  \n> Fetch the complete documentation index at: https://developers.cloudflare.com/workers-vpc/llms.txt  \n> Use this file to discover all available pages before exploring further.\n\n# Limits\n\nLast updated Sep 16, 2026|Copy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\n## Service limits\n\n| Resource                 | Limit |\n| ------------------------ | ----- |\n| VPC Services per account | 1000  |\n\nStandard Workers limits apply for request size, timeout, and subrequests.\n\nNote\n\nWorkers VPC is currently in beta. Features and APIs may change before general availability. While in beta, Workers VPC is available for free to all Workers plans.\n\nWas this helpful?\n\nYesNo\n\n## On this page\n\n[![](/_astro/logo.te5VL_aD.svg)Docs](/)\n\n\n</text>\n</result>"
+      },
+      {
+        "callId": "call_01_VYtkvjKLrVDgCErVu93G3392",
+        "name": "mcp__cfdocs__search_cloudflare_documentation",
+        "arguments": "{\"query\": \"Workers plans free paid limits requests per day\"}",
+        "time": 1794302027142,
+        "durationMs": 4605,
+        "ok": true,
+        "resultChars": 31929,
+        "resultText": "<result>\n<url>https://developers.cloudflare.com/workers/platform/limits/</url>\n<title>Limits</title>\n<text>\n## Daily requests\n\nWorkers scale automatically across the Cloudflare global network. There is no general limit on requests per second.\n\nAccounts on the Workers Free plan have a daily request limit of 100,000 requests, resetting at midnight UTC. When a Worker exceeds this limit, Cloudflare returns **Error 1027**.\n\n| Route mode  | Behavior                                                                      |\n| ----------- | ----------------------------------------------------------------------------- |\n| Fail open   | Bypasses the Worker. Requests behave as if no Worker is configured.           |\n| Fail closed | Returns a Cloudflare 1027 error page. Use this for security-critical Workers. |\n\nYou can configure the fail mode by toggling the corresponding [route](/workers/configuration/routing/routes/).\n\n---\n\n## Subrequests\n\nA subrequest is any request a Worker makes using the [Fetch API](/workers/runtime-apis/fetch/) or to Cloudflare services like [R2](/r2/), [KV](/kv/), or [D1](/d1/).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/browser-run/limits/</url>\n<title>Limits</title>\n<text>\n### Error: `429 Browser time limit exceeded for today`\n\nThis `Error processing the request: Unable to create new browser: code: 429: message: Browser time limit exceeded for today` error indicates you have hit the daily browser limit on the Workers Free plan. [Workers Free plan accounts are limited](#workers-free) to 10 minutes of Browser Run usage per day. If you exceed that limit, you will receive a `429` error until the next UTC day.\n\nYou can [increase your limits](#workers-paid) by upgrading to a Workers Paid plan on the **Workers plans** page of the Cloudflare dashboard:\n\n[Go to **Workers plans** ↗ ](https://dash.cloudflare.com/?to=/:account/workers/plans) \n\nIf you recently upgraded but still encounter the 10-minute per day limit, redeploy your Worker to ensure your usage is correctly associated with the new plan.\n\n## Footnotes\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/browser-run/limits/</url>\n<title>Limits</title>\n<text>\n# Limits\n\nLast updated Oct 14, 2026|Copy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nBrowser Run limits are based on your [Cloudflare Workers plan](/workers/platform/pricing/).\n\nFor pricing information, refer to [Browser Run pricing](/browser-run/pricing/).\n\n## Workers Free\n\nNeed higher limits?\n\nIf you are on a Workers Free plan and you want to increase your limits, upgrade to a Workers Paid plan in the **Workers plans** page of the Cloudflare dashboard:\n\n[Go to **Workers plans** ↗ ](https://dash.cloudflare.com/?to=/:account/workers/plans)\n\n| Feature                                                                         | Limit                              |\n| ------------------------------------------------------------------------------- | ---------------------------------- |\n| Browser hours                                                                   | 10 minutes per day                 |\n| Concurrent browsers per account (Browser Sessions only) [1](#user-content-fn-1) | 3 per account                      |\n| New browser instances (Browser Sessions only)                                   | 1 every 20 seconds                 |\n| Browser timeout                                                                 | 60 seconds [2](#user-content-fn-2) |\n| Total requests (Quick Actions only) [3](#user-content-fn-3)                     | 1 every 10 seconds                 |\n\n### `/crawl` endpoint limits\n\nThe [/crawl endpoint](/browser-run/quick-actions/crawl-endpoint/) has additional limits for Workers Free plan users:\n\n| Feature                 | Limit     |\n| ----------------------- | --------- |\n| Crawl jobs per day      | 5 per day |\n| Maximum pages per crawl | 100 pages |\n\n## Workers Paid\n\nNeed higher limits?\n\nThe limits below are defaults for Workers Paid users. If you need to scale beyond them, Cloudflare can increase your account limits. [Request higher limits ↗︎](https://forms.gle/CdueDKvb26mTaepa9).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/changelog/product-group/ai/4/</url>\n<title>4</title>\n<text>\n// Request human intervention and wait for completion\nconst handoffComplete = new Promise((resolve) => {\n\tcdp.once(\"Cloudflare.handoffComplete\", resolve);\n});\n\nawait cdp.send(\"Cloudflare.handoff\", {\n\tinstructions: \"Please log in with your credentials\",\n\ttimeout: 600000,\n});\n\nconst result = await handoffComplete;\nconsole.log(result.success ? \"Handoff complete\" : `Failed: ${result.reason}`);\n```\n\nRefer to the [Human in the Loop documentation](/browser-run/features/human-in-the-loop/) for the full API reference, examples, and best practices.\n\nJul 28, 2026\n\n[Select models now require the Workers Paid plan](/changelog/post/2026-07-28-models-require-workers-paid/)\n\n[Workers AI](/workers-ai/)\n\nWe are limiting Workers Free plan access to a few resource-intensive models so we can prioritize capacity for the broader Workers AI user base. This helps everyone get a more reliable inference experience, with fewer `429` and `3040` (Out of Capacity) errors.\n\nThe following models now require the [Workers Paid plan](/workers/platform/pricing/#workers):\n\n* [@cf/moonshotai/kimi-k2.6](/workers-ai/models/kimi-k2.6/)\n* [@cf/moonshotai/kimi-k2.7-code](/workers-ai/models/kimi-k2.7-code/)\n* [@cf/zai-org/glm-5.2](/workers-ai/models/glm-5.2/)\n\nOn the Workers Free plan, requests to these models now return a `403` HTTP error ([internal error 5035](/workers-ai/platform/errors/)) prompting you to upgrade. The Workers Paid plan starts at $5 per month and still includes the 10,000 free Neurons per day allocation, with usage beyond that billed at each [model's pricing](/workers-ai/platform/pricing/).\n\nMany models remain available on the Workers Free plan, including:\n\n* [@cf/zai-org/glm-4.7-flash](/workers-ai/models/glm-4.7-flash/)\n* [@cf/google/gemma-4-26b-a4b-it](/workers-ai/models/gemma-4-26b-a4b-it/)\n* [@cf/nvidia/nemotron-3-120b-a12b](/workers-ai/models/nemotron-3-120b-a12b/)\n\nFor the full list, refer to the [Workers AI model catalog](/workers-ai/models/).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/pages/functions/pricing/</url>\n<title>Pricing</title>\n<text>\n# Pricing\n\nLast updated Sep 8, 2026|Copy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nRequests to your Functions are billed as Cloudflare Workers requests. Workers plans and pricing can be found [in the Workers documentation](/workers/platform/pricing/).\n\n## Paid Plans\n\nRequests to your Pages functions count towards your quota for Workers Paid plans, including requests from your Function to KV or Durable Object bindings.\n\nPages supports the [Standard usage model](/workers/platform/pricing/#example-pricing-standard-usage-model).\n\nNote\n\nWorkers Enterprise accounts are billed based on the usage model specified in their contract. To switch to the Standard usage model, reach out to your account team. Some Workers Enterprise customers maintain the ability to [change usage models](/workers/platform/pricing/#how-to-switch-usage-models).\n\n### Static asset requests\n\nOn both free and paid plans, requests to static assets are free and unlimited. A request is considered static when it does not invoke Functions. Refer to [Functions invocation routes](/pages/functions/routing/#functions-invocation-routes) to learn more about when Functions are invoked.\n\n## Free Plan\n\nRequests to your Pages Functions count towards your quota for the Workers Free plan. For example, you could use 50,000 Functions requests and 50,000 Workers requests to use your full 100,000 daily request usage. The free plan daily request limit resets at midnight UTC.\n\nWas this helpful?\n\nYesNo\n\n## On this page\n\n[![](/_astro/logo.te5VL_aD.svg)Docs](/)\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/changelog/post/2026-02-11-subrequests-limit/</url>\n<title>2026 02 11 Subrequests Limit</title>\n<text>\n## Workers are no longer limited to 1000 subrequests\n\n[Workers](/workers/)\n\nCopy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nWorkers no longer have a limit of 1000 subrequests per invocation, allowing you to make more `fetch()` calls or requests to Cloudflare services on every incoming request. This is especially important for long-running Workers requests, such as open websockets on [Durable Objects](/durable-objects) or long-running [Workflows](/workflows), as these could often exceed this limit and error.\n\nBy default, Workers on paid plans are now limited to 10,000 subrequests per invocation, but this limit can be increased up to 10 million by setting the new `subrequests` limit in your Wrangler configuration file.\n\n```jsonc\n{\n\t\"limits\": {\n\t\t\"subrequests\": 50000,\n\t},\n}\n```\n\n```toml\n[limits]\nsubrequests = 50_000\n```\n\nWorkers on the free plan remain limited to 50 external subrequests and 1000 subrequests to Cloudflare services per invocation.\n\nTo protect against runaway code or unexpected costs, you can also set a lower limit for both subrequests and CPU usage.\n\n```jsonc\n{\n\t\"limits\": {\n\t\t\"subrequests\": 10,\n\t\t\"cpu_ms\": 1000,\n\t},\n}\n```\n\n```toml\n[limits]\nsubrequests = 10\ncpu_ms = 1_000\n```\n\nFor more information, refer to the [Wrangler configuration documentation for limits](/workers/wrangler/configuration/#limits) and [subrequest limits](/workers/platform/limits/#subrequests).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/changelog/17/</url>\n<title>17</title>\n<text>\nWe are limiting Workers Free plan access to a few resource-intensive models so we can prioritize capacity for the broader Workers AI user base. This helps everyone get a more reliable inference experience, with fewer `429` and `3040` (Out of Capacity) errors.\n\nThe following models now require the [Workers Paid plan](/workers/platform/pricing/#workers):\n\n* [@cf/moonshotai/kimi-k2.6](/workers-ai/models/kimi-k2.6/)\n* [@cf/moonshotai/kimi-k2.7-code](/workers-ai/models/kimi-k2.7-code/)\n* [@cf/zai-org/glm-5.2](/workers-ai/models/glm-5.2/)\n\nOn the Workers Free plan, requests to these models now return a `403` HTTP error ([internal error 5035](/workers-ai/platform/errors/)) prompting you to upgrade. The Workers Paid plan starts at $5 per month and still includes the 10,000 free Neurons per day allocation, with usage beyond that billed at each [model's pricing](/workers-ai/platform/pricing/).\n\nMany models remain available on the Workers Free plan, including:\n\n* [@cf/zai-org/glm-4.7-flash](/workers-ai/models/glm-4.7-flash/)\n* [@cf/google/gemma-4-26b-a4b-it](/workers-ai/models/gemma-4-26b-a4b-it/)\n* [@cf/nvidia/nemotron-3-120b-a12b](/workers-ai/models/nemotron-3-120b-a12b/)\n\nFor the full list, refer to the [Workers AI model catalog](/workers-ai/models/).\n\nJul 28, 2026\n\n[Workers tracing — write custom spans with new startActiveSpan() and span.end() runtime APIs](/changelog/post/2026-07-28-start-active-span/)\n\n[Workers](/workers/)\n\nThe Workers runtime now provides built-in `tracing.startActiveSpan()` and `span.end()` APIs, allowing you to write custom spans for operations that last beyond a single callback — for example, instrumenting a stream pipeline where the span should stay open until the stream is fully consumed.\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/changelog/product/workers-ai/</url>\n<title>Workers Ai</title>\n<text>\nWe are limiting Workers Free plan access to a few resource-intensive models so we can prioritize capacity for the broader Workers AI user base. This helps everyone get a more reliable inference experience, with fewer `429` and `3040` (Out of Capacity) errors.\n\nThe following models now require the [Workers Paid plan](/workers/platform/pricing/#workers):\n\n* [@cf/moonshotai/kimi-k2.6](/workers-ai/models/kimi-k2.6/)\n* [@cf/moonshotai/kimi-k2.7-code](/workers-ai/models/kimi-k2.7-code/)\n* [@cf/zai-org/glm-5.2](/workers-ai/models/glm-5.2/)\n\nOn the Workers Free plan, requests to these models now return a `403` HTTP error ([internal error 5035](/workers-ai/platform/errors/)) prompting you to upgrade. The Workers Paid plan starts at $5 per month and still includes the 10,000 free Neurons per day allocation, with usage beyond that billed at each [model's pricing](/workers-ai/platform/pricing/).\n\nMany models remain available on the Workers Free plan, including:\n\n* [@cf/zai-org/glm-4.7-flash](/workers-ai/models/glm-4.7-flash/)\n* [@cf/google/gemma-4-26b-a4b-it](/workers-ai/models/gemma-4-26b-a4b-it/)\n* [@cf/nvidia/nemotron-3-120b-a12b](/workers-ai/models/nemotron-3-120b-a12b/)\n\nFor the full list, refer to the [Workers AI model catalog](/workers-ai/models/).\n\nJul 10, 2026\n\n[Plain text output for Markdown Conversion](/changelog/post/2026-07-13-markdown-conversion-text-output/)\n\n[Workers AI](/workers-ai/)\n\nThe [Markdown Conversion](/workers-ai/features/markdown-conversion/) service now supports a new `output` conversion option that controls the format of the converted content.\n\nSet `output.format` to `text` to receive plain text with Markdown syntax removed. The default value is `markdown`, so existing conversions are unchanged.\n\nUse the [env.AI](/workers-ai/features/markdown-conversion/usage/binding/) binding:\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/browser-run/limits/</url>\n<title>Limits</title>\n<text>\n### Is there a maximum session duration?\n\nThere is no fixed maximum lifetime for a browser session as long as it remains active. By default, Browser Run closes sessions after one minute of inactivity to prevent unintended usage. You can [increase this inactivity timeout](/browser-run/puppeteer/#keep-alive) to up to 20 minutes.\n\nIf you need sessions to remain open longer, keep them active by sending a command at least once within your configured inactivity window (for example, every 20 minutes). Sessions also close when Browser Run rolls out a new release.\n\n### I upgraded from the Workers Free plan, but I'm still hitting the 10-minute per day limit. What should I do?\n\nIf you recently upgraded to the [Workers Paid plan](/workers/platform/pricing/) but still encounter the 10-minute per day limit, redeploy your Worker to ensure your usage is correctly associated with the new plan.\n\n### Why is my browser usage higher than expected?\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/changelog/post/2026-07-28-models-require-workers-paid/</url>\n<title>2026 07 28 Models Require Workers Paid</title>\n<text>\n## Select models now require the Workers Paid plan\n\n[Workers AI](/workers-ai/)\n\nCopy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nWe are limiting Workers Free plan access to a few resource-intensive models so we can prioritize capacity for the broader Workers AI user base. This helps everyone get a more reliable inference experience, with fewer `429` and `3040` (Out of Capacity) errors.\n\nThe following models now require the [Workers Paid plan](/workers/platform/pricing/#workers):\n\n* [@cf/moonshotai/kimi-k2.6](/workers-ai/models/kimi-k2.6/)\n* [@cf/moonshotai/kimi-k2.7-code](/workers-ai/models/kimi-k2.7-code/)\n* [@cf/zai-org/glm-5.2](/workers-ai/models/glm-5.2/)\n\nOn the Workers Free plan, requests to these models now return a `403` HTTP error ([internal error 5035](/workers-ai/platform/errors/)) prompting you to upgrade. The Workers Paid plan starts at $5 per month and still includes the 10,000 free Neurons per day allocation, with usage beyond that billed at each [model's pricing](/workers-ai/platform/pricing/).\n\nMany models remain available on the Workers Free plan, including:\n\n* [@cf/zai-org/glm-4.7-flash](/workers-ai/models/glm-4.7-flash/)\n* [@cf/google/gemma-4-26b-a4b-it](/workers-ai/models/gemma-4-26b-a4b-it/)\n* [@cf/nvidia/nemotron-3-120b-a12b](/workers-ai/models/nemotron-3-120b-a12b/)\n\nFor the full list, refer to the [Workers AI model catalog](/workers-ai/models/).\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/workers/platform/pricing/</url>\n<title>Pricing</title>\n<text>\n## Workflows\n\n| Unit                | Workers Free                                                                         | Workers Paid                                                                                   |\n| ------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |\n| Requests (millions) | 100,000 per day ([shared with Workers requests](/workers/platform/pricing/#workers)) | 10 million included per month + $0.30 per additional million                                   |\n| CPU time (ms)       | 10 milliseconds of CPU time per invocation                                           | 30 million CPU milliseconds included per month + $0.02 per additional million CPU milliseconds |\n| Storage (GB-mo)     | 1 GB-month                                                                           | 1 GB-month included + $0.20/ GB-month                                                          |\n| Steps               | 3,000 per day                                                                        | 500,000 included per month + $0.80/ additional 100,000 per month                               |\n\nCloudflare will not bill step and storage usage before the start date announced in the [Workflows billing changelog](/changelog/post/2026-07-07-workflows-billing-updates/).\n\nWorkflows pricing\n\nTo learn more about Workflows billing, refer to [Workflows pricing](/workflows/reference/pricing/).\n\n## D1\n\nD1 is available on both the Workers Free and Workers Paid plans.\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/ai-search/platform/limits-pricing/</url>\n<title>Limits Pricing</title>\n<text>\n| Metadata per vector                                      | 10 KiB total, including system overhead | 10 KiB total, including system overhead                                                                 |\n| Filterable indexed string data                           | First 64 UTF-8 bytes per string         | First 64 UTF-8 bytes per string                                                                         |\n\nWebsite crawling is bounded by several of these limits at once. A `discover` crawl accepts up to 100,000 pages, but the files per instance and maximum pages crawled per day limits also apply, so the number of pages you end up with is whichever of those values is lowest. On Workers Free, the daily limit of 500 pages is the binding one.\n\nFor the limits that apply only to website data sources, refer to [Website](/ai-search/configuration/data-source/website/#limits).\n\nNeed a higher limit?\n\nTo request an adjustment to a limit, complete the [Limit Increase Request Form ↗︎](https://forms.gle/wnizxrEUW33Y15CT8). If the limit can be increased, Cloudflare will contact you with next steps.\n\n## Pricing\n\n\n</text>\n</result>\n<result>\n<url>https://developers.cloudflare.com/workers-ai/platform/pricing/</url>\n<title>Pricing</title>\n<text>\n# Pricing\n\nLast updated Oct 20, 2026|Copy as Markdown|[View as Markdown](index.md)|[Agent setup](/agent-setup/)\n\nNote\n\nWorkers AI has updated pricing to be more granular, with per-model unit-based pricing presented, but still billing in neurons in the back end.\n\nWorkers AI is included in both the [Free and Paid Workers plans](/workers/platform/pricing/) and is priced at **$0.011 per 1,000 Neurons**.\n\nOur free allocation allows anyone to use a total of **10,000 Neurons per day at no charge**. To use more than 10,000 Neurons per day, you need to sign up for the [Workers Paid plan](/workers/platform/pricing/#workers). On Workers Paid, you will be charged at $0.011 / 1,000 Neurons for any usage above the free allocation of 10,000 Neurons per day.\n\nYou can monitor your Neuron usage in the [Cloudflare Workers AI dashboard ↗︎"
+      },
+      {
+        "callId": "call_00_0nAu5o7N6Hru8RLFI99e6628",
+        "name": "write",
+        "arguments": "{\"file_path\": \"/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/full-combo__docs-workers-limit__r1__20261110-171333/cf_limit.txt\", \"content\": \"100000\\n\"}",
+        "time": 1794302033517,
+        "durationMs": 15,
+        "ok": true,
+        "resultChars": 203,
+        "resultText": "<path>/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/full-combo__docs-workers-limit__r1__20261110-171333/cf_limit.txt</path>\n<type>file</type>\n<content>\nCreated file\n</content>"
+      },
+      {
+        "callId": "call_00_buVXBLCE1FDqpnF4OwTI7267",
+        "name": "read",
+        "arguments": "{\"file_path\": \"/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/full-combo__docs-workers-limit__r1__20261110-171333/cf_limit.txt\"}",
+        "time": 1794302035046,
+        "durationMs": 8,
+        "ok": true,
+        "resultChars": 231,
+        "resultText": "<path>/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/full-combo__docs-workers-limit__r1__20261110-171333/cf_limit.txt</path>\n<type>file</type>\n<content>\n1: 100000\n\n(End of file - total 1 lines)\n</content>"
+      }
+    ],
+    "toolCallsByName": {
+      "search_tools": 2,
+      "mcp__cfapi__docs": 1,
+      "mcp__cfdocs__search_cloudflare_documentation": 1,
+      "write": 1,
+      "read": 1
+    },
+    "failures": [],
+    "turnsEndReason": "completed",
+    "finalAnswer": "已完成。\n\n**结论**：Cloudflare Workers Free 计划的每日请求上限是 **100,000 次/天**（UTC 零点重置，超限返回 Error 1027）。该值已写入 `cf_limit.txt`（内容仅 `100000`）。\n\n**依据**（用 DSH 已接入的 Cloudflare 能力，未用 bash / web_search / web_fetch）：\n\n1. `search_tools` 加载了已接好的两个 Cloudflare MCP 服务工具（`mcp-cfdocs`、`mcp-cfapi` 的文档检索能力）。\n2. `mcp__cfapi__docs` 与 `mcp__cfdocs__search_cloudflare_documentation` 各自检索，均返回同一权威页面 [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)：\n   - “Accounts on the Workers Free plan have a daily request limit of **100,000 requests**, resetting at midnight UTC.”\n   - 限制对照表：Requests — Workers Free `100,000/day`，Workers Paid `No limit`。\n   - 旁证：[Pages Functions pricing](https://developers.cloudflare.com/pages/functions/pricing/) 说明 Pages Functions 请求计入 Workers Free 额度（50,000 + 50,000 = 100,000/天）。\n3. 用 `write` 工具写入文件，再用 `read` 工具复核，确认为单行 `100000`。\n\n文件路径：`/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/full-combo__docs-workers-limit__r1__20261110-171333/cf_limit.txt`",
+    "signal": {},
+    "latency": {
+      "toolCallsWithResult": 6,
+      "toolP50Ms": 8,
+      "toolP95Ms": 4605,
+      "toolWallMsTotal": 8423
+    },
+    "startedAt": 1794302019442,
+    "finishedAt": 1794302037644,
+    "wallMs": 18202
+  },
+  "discovery": {
+    "taskId": "docs-workers-limit",
+    "family": "cfdocs",
+    "searchCount": 2,
+    "setupSearchCount": 2,
+    "firstTargetTool": "mcp__cfapi__docs",
+    "firstTargetToolStep": 2,
+    "targetToolCalls": [
+      "mcp__cfapi__docs",
+      "mcp__cfdocs__search_cloudflare_documentation"
+    ],
+    "targetToolCalled": true,
+    "missedCapability": false,
+    "loadedToolCount": 20,
+    "usedLoadedToolCount": 2,
+    "loadedUsedRatio": 0.1,
+    "firstRequestToolCount": 34,
+    "firstRequestToolChars": 22909
+  }
+}

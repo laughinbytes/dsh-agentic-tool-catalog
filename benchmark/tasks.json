@@ -1,0 +1,301 @@
+{
+  "version": 3,
+  "updated": "2026-11-10",
+  "note": "能力发现 benchmark 的任务集。任务 prompt 不点工具名；禁止项会由 run.mjs 自动附加到 prompt。family 用来从会话日志判断'模型最终走了哪条能力路径'，不参与 pass/fail；pass 只看独立核验（文件/状态）。 | v2（2026-11-10）：修正 docs-d1-storage 验收——D1 免费档单库上限是 500MB=0.5GB，原正则只接受 5/10/2 属验收 bug。 | v3（2026-11-10）：新增 workspace MCP 日历任务（考察 21 个 MCP 工具里找对的那个）；需要 workspace MCP 已授权。",
+  "families": {
+    "control": {
+      "label": "基础能力对照（常驻工具即可完成；用来验证 benchmark 本身没有额外发现开销）",
+      "toolPatterns": [
+        "read",
+        "write",
+        "edit",
+        "glob",
+        "grep",
+        "bash"
+      ],
+      "discoveryExpected": false
+    },
+    "dsh-host-ops": {
+      "label": "DSH 宿主操作（会话/工作区/配置）",
+      "toolPatterns": [
+        "dsh_workspace_manage",
+        "dsh_session_manage",
+        "dsh_config_manage"
+      ],
+      "discoveryExpected": true
+    },
+    "terminal": {
+      "label": "持久终端",
+      "toolPatterns": [
+        "terminal_*"
+      ],
+      "discoveryExpected": true
+    },
+    "cfdocs": {
+      "label": "Cloudflare 官方文档检索（MCP）",
+      "toolPatterns": [
+        "mcp__cfdocs__*",
+        "mcp__cfapi__*"
+      ],
+      "discoveryExpected": true
+    },
+    "schedule": {
+      "label": "提醒（schedule）",
+      "toolPatterns": [
+        "schedule_*"
+      ],
+      "discoveryExpected": true
+    },
+    "goals": {
+      "label": "目标跟踪（goals）",
+      "toolPatterns": [
+        "create_goal",
+        "get_goal",
+        "update_goal"
+      ],
+      "discoveryExpected": true
+    },
+    "session-search": {
+      "label": "会话内容搜索（session-search 扩展）",
+      "toolPatterns": [
+        "session_search",
+        "session_event_search",
+        "session_trace",
+        "session_event_trace",
+        "session_event_read"
+      ],
+      "discoveryExpected": true
+    },
+    "browser": {
+      "label": "浏览器自动化（需要 operator 扩展在线；Phase 2 再启用）",
+      "toolPatterns": [
+        "browser_*"
+      ],
+      "discoveryExpected": true,
+      "enabled": false
+    },
+    "mcp-workspace": {
+      "label": "Google Workspace MCP（21 个工具；日历/邮件/鉴权）",
+      "toolPatterns": [
+        "mcp__workspace__*"
+      ],
+      "discoveryExpected": true
+    }
+  },
+  "tasks": [
+    {
+      "id": "control-sum",
+      "family": "control",
+      "phase": 0,
+      "title": "基础对照：文件求和",
+      "prompt": "当前目录下有一个 data.csv 文件（两列，第一列是名字，第二列是数字）。请把第二列所有数字求和，结果写进当前目录的 answer.txt（只写数字，不要别的文字）。",
+      "forbid": [],
+      "fixtures": {
+        "data.csv": "alpha,1\nbeta,2\ngamma,3\n"
+      },
+      "verify": {
+        "files": [
+          {
+            "path": "answer.txt",
+            "regex": "^\\s*6\\s*$"
+          }
+        ]
+      },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "control-md-count",
+      "family": "control",
+      "phase": 0,
+      "title": "基础对照：数 markdown 文件",
+      "prompt": "当前目录下有一些文件。请数出后缀是 .md 的文件有几个，把数字写进当前目录的 count.txt（只写数字）。",
+      "forbid": [],
+      "fixtures": {
+        "a.md": "# a\n",
+        "b.txt": "b\n",
+        "c.md": "# c\n",
+        "d.md": "# d\n"
+      },
+      "verify": {
+        "files": [
+          {
+            "path": "count.txt",
+            "regex": "^\\s*3\\s*$"
+          }
+        ]
+      },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "host-ops-session-list",
+      "family": "dsh-host-ops",
+      "phase": 0,
+      "title": "列出当前工作区最近 3 个会话",
+      "prompt": "请列出当前这个 DSH 工作区里最近的 3 个会话：每个会话给出一行「标题 | sessionId 前 8 位」。把结果写入当前目录的 sessions.txt（3 行）。不要用 bash 去翻 ~/.dsh 目录。",
+      "forbid": [
+        "bash"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "sessions.txt",
+            "minLines": 3,
+            "regex": "session-[0-9a-f]{8}|[0-9a-f]{8}"
+          }
+        ]
+      },
+      "timeoutMs": 240000
+    },
+    {
+      "id": "docs-workers-limit",
+      "family": "cfdocs",
+      "phase": 0,
+      "title": "Cloudflare Workers 免费计划每日请求上限",
+      "prompt": "请查一下 Cloudflare Workers 免费计划（Free plan）每天的请求上限是多少，把数字写进当前目录的 cf_limit.txt（只写数字，例如 12345）。不要用 bash、web_search、web_fetch，只能用 DSH 里已经接好的 Cloudflare 能力。",
+      "forbid": [
+        "bash",
+        "web_search",
+        "web_fetch"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "cf_limit.txt",
+            "regex": "^\\s*100[,\\s]?000\\s*$"
+          }
+        ]
+      },
+      "timeoutMs": 240000
+    },
+    {
+      "id": "terminal-echo",
+      "family": "terminal",
+      "phase": 1,
+      "title": "持久终端执行并写结果",
+      "prompt": "请用 DSH 的持久终端能力开一个终端，在里面执行 `echo discovery-ok`，然后把命令输出写入当前目录的 term.txt。不要用 bash 工具。",
+      "forbid": [
+        "bash"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "term.txt",
+            "regex": "discovery-ok"
+          }
+        ]
+      },
+      "timeoutMs": 240000
+    },
+    {
+      "id": "schedule-reminder",
+      "family": "schedule",
+      "phase": 1,
+      "title": "建提醒并回读列表",
+      "prompt": "请给当前这个会话创建一个 10 分钟后的提醒，提醒内容写成 discovery-bench。然后把这个会话当前的提醒列表写入当前目录的 reminders.txt。不要用 bash。",
+      "forbid": [
+        "bash"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "reminders.txt",
+            "regex": "discovery-bench"
+          }
+        ]
+      },
+      "timeoutMs": 240000
+    },
+    {
+      "id": "goal-set",
+      "family": "goals",
+      "phase": 1,
+      "title": "设置会话目标并回读",
+      "prompt": "请给当前这个会话设置一个目标，内容写成：完成 discovery benchmark 第一轮。然后把当前目标的内容写入当前目录的 goal.txt。不要用 bash。",
+      "forbid": [
+        "bash"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "goal.txt",
+            "regex": "discovery benchmark"
+          }
+        ]
+      },
+      "timeoutMs": 240000
+    },
+    {
+      "id": "session-search-count",
+      "family": "session-search",
+      "phase": 1,
+      "title": "搜索本工作区会话内容",
+      "prompt": "请在当前这个 DSH 工作区的历史会话里搜索包含关键词 tool-discovery 的会话，把命中的会话数量写进当前目录的 search.txt（只写数字）。不要用 bash 去翻会话文件。",
+      "forbid": [
+        "bash"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "search.txt",
+            "regex": "^\\s*\\d+\\s*$"
+          }
+        ]
+      },
+      "timeoutMs": 900000,
+      "invalidOnTimeout": true,
+      "notes": "环境敏感：session_search 在未注册的 benchmark 子目录会 30s 超时/索引抖动；超时按 invalid 记，不记策略失败；上限 900s。"
+    },
+    {
+      "id": "docs-d1-storage",
+      "family": "cfdocs",
+      "phase": 1,
+      "title": "D1 存储上限",
+      "prompt": "请查一下 Cloudflare D1 数据库在免费档（Free plan）下单个数据库的存储上限，把数字换算成 GB 写进当前目录的 d1_limit.txt（只写数字；500MB 请写 0.5）。不要用 bash、web_search、web_fetch，只能用 DSH 里已经接好的 Cloudflare 能力。",
+      "forbid": [
+        "bash",
+        "web_search",
+        "web_fetch"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "d1_limit.txt",
+            "regex": "^\\s*(0?\\.5|500\\s*mb)\\s*$"
+          }
+        ]
+      },
+      "timeoutMs": 240000,
+      "note": "2026-11-10 修正：正确答案 = 0.5GB（Free 档 500MB）；验收同时接受 500 MB 写法。"
+    },
+    {
+      "id": "workspace-calendar-count",
+      "family": "mcp-workspace",
+      "phase": 2,
+      "title": "列出日历数量",
+      "prompt": "请列一下我 Google 账号下有哪些日历，把日历数量写进当前目录的 calendars.txt（只写数字）。不要用 bash、web_search、web_fetch，只能用 DSH 里已经接好的能力。",
+      "forbid": [
+        "bash",
+        "web_search",
+        "web_fetch"
+      ],
+      "fixtures": {},
+      "verify": {
+        "files": [
+          {
+            "path": "calendars.txt",
+            "regex": "^\\s*\\d+\\s*$"
+          }
+        ]
+      },
+      "timeoutMs": 240000,
+      "note": "需要 workspace MCP 已授权（无授权时所有 arm 同等失败，记 invalid 而不是 arm 缺陷）。"
+    }
+  ]
+}

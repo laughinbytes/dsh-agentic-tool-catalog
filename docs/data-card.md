@@ -86,7 +86,7 @@
   本卡使用的是工具面一致的 10–4x 批次；
 - 首请求 tokens 来自会话日志真实 usage（非 chars/4 估算）；schema 字符是载荷指标。成本/墙钟受模型与网络影响，应看多轮重复；
 - 复现：`node benchmark/discovery/card.mjs --baseline baseline-resident --treatment agent-catalog --tasks host-ops-session-list,docs-workers-limit,terminal-echo,goal-set,docs-d1-storage --markdown`
-  原始结果在 [`results/`](results/)，方法说明 [`benchmark/discovery/README.md`](README.md)。
+  原始结果在 [`results/`](../benchmark/results/)，方法说明 [`benchmark/README.md`](../benchmark/README.md)。
 
 ## 7. 和竞品怎么比
 

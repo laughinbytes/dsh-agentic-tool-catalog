@@ -50,5 +50,5 @@ Notes:
   `workspace-calendar-count` is excluded from the main table because it depends on MCP availability.
 - First-request token figures come from real session usage (`inputTokens + cacheReadTokens`); schema chars are a
   payload-size metric, **not** a chars/4 token estimate.
-- Full methodology and raw results: `benchmark/discovery/data-card.md` and `benchmark/discovery/results/` in the
+- Full methodology and raw results: `benchmark/data-card.md` and `benchmark/results/` in the
   source repository.

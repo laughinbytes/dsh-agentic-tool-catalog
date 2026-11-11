@@ -1,0 +1,16 @@
+{
+  "runId": "baseline-resident__terminal-echo__r1__20261111-101345",
+  "arm": "baseline-resident",
+  "armTitle": "数据卡 baseline：所有工具常驻上下文（等价“不用按需目录”）",
+  "armStatus": "ready",
+  "taskId": "terminal-echo",
+  "taskTitle": "持久终端执行并写结果",
+  "family": "terminal",
+  "rep": 1,
+  "prompt": "请用 DSH 的持久终端能力开一个终端，在里面执行 `echo discovery-ok`，然后把命令输出写入当前目录的 term.txt。不要用 bash 工具。\n\n注意：本任务禁止使用这些工具：bash。\n\n当前工作目录就是本次实验目录（所有输出文件都写在这里）。完成后简短说明你用了哪些能力，然后结束。",
+  "workdir": "/Users/chuang/Documents/deepseek-harness/dsh-dev/benchmark/discovery/work/baseline-resident__terminal-echo__r1__20261111-101345",
+  "createdAt": "2026-11-11T02:13:45.044Z",
+  "repoHead": "38fd12f",
+  "note": "",
+  "sessionId": null
+}

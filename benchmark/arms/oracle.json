@@ -1,0 +1,20 @@
+{
+  "strategy": "oracle",
+  "note": "oracle 尺子：人工最优分组（质量上界）。2026-11-10 第二版：按 live 环境（browser-use 迁移后 93 个按需工具）人工整理；MCP 仍按 server 自动组。",
+  "oracle": {
+    "groups": [
+      { "id": "browser-advanced", "description": "Advanced page actions: find element by intent, typeahead pick, coordinate click, drag, fill form.", "patterns": ["browser_find", "browser_pick", "browser_click_at", "browser_drag", "browser_fill_form"] },
+      { "id": "browser-capabilities", "description": "Page capabilities and devtools: JS dialogs, local file upload, console messages, network request metadata.", "patterns": ["browser_dialog", "browser_upload", "browser_console", "browser_network"] },
+      { "id": "browser", "description": "Browser core operations on a real Chrome tab: open/attach/close tabs, navigate, observe, click, type, select, press keys, scroll, wait, read text, screenshot, hover, risk advice.", "patterns": ["browser_*"] },
+      { "id": "dsh-host-ops", "description": "DSH Host Ops: list/start sessions; send vs steer vs queue; wait/notify; read/search/archive/rename sessions; manage workspaces; edit DSH config.", "patterns": ["dsh_workspace_manage", "dsh_session_manage", "dsh_config_manage"] },
+      { "id": "schedule", "description": "Reminders: create, list, view or edit scheduled prompts for this session.", "patterns": ["schedule_*"] },
+      { "id": "goals", "description": "Goal tracking: create, read or update the session goal.", "patterns": ["create_goal", "get_goal", "update_goal"] },
+      { "id": "terminal", "description": "Persistent terminals: open, send input, read output, signal, close, list sessions.", "patterns": ["terminal_*"] },
+      { "id": "session-search", "description": "Search and trace prior sessions/events in this workspace (full-text search, lineage, event read).", "patterns": ["session_search", "session_event_search", "session_trace", "session_event_trace", "session_event_read"] },
+      { "id": "exhibits", "description": "Exhibits workspace tools: create, update, list, export and open exhibits; collect feedback.", "patterns": ["exhibits_*"] },
+      { "id": "plugin-dev", "description": "DSH plugin development and live inspection: install/update/remove plugin bundles; inspect services, config schemas, tools, UI slots and themes.", "patterns": ["plugin_manager", "plugin_market*", "cordis_inspect*"] },
+      { "id": "workflow", "description": "Workflow runner: execute a multi-step orchestration script across subagents.", "patterns": ["workflow"] },
+      { "id": "misc", "description": "Miscellaneous local tools: CUA computer use, ralph loops, worktree creation, channel workers, subagent model listing, propose_action.", "patterns": ["cua", "ralph", "propose_action", "create_worktree", "channel_workers", "list_subagent_models"] }
+    ]
+  }
+}

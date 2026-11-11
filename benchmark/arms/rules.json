@@ -1,0 +1,4 @@
+{
+  "strategy": "rules",
+  "note": "rules 策略：MCP 约定 + 名字两遍聚类 + others（无插件配合、无硬编码）。组名/组描述由算法生成。"
+}
