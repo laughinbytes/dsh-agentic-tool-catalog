@@ -16,8 +16,8 @@
 ## Publish order
 
 1. **npm** (primary): `npm login` first; then `npm publish --access public`.
-2. **GitHub**: create `laughinbytes/dsh-agentic-tool-catalog`, push `main`, tag the release, add topics
-   (`dsh`, `dsh-plugin`, `deepseek-harness`, `tool-catalog`, `mcp`, `context`), publish Release notes.
+2. **GitHub**: ✅ done — `https://github.com/laughinbytes/dsh-agentic-tool-catalog`, tag `v0.3.1`, Release created,
+   topics added (`dsh`, `dsh-plugin`, `deepseek-harness`, `tool-catalog`, `mcp`, `context`).
 3. **Markets** (after npm + GitHub): awesome-dsh-plugin, dshbase, dshplugin.store, dpharness, dsh.directory.
 
 ## Blockers / decisions
@@ -25,7 +25,7 @@
 - [x] npm authentication: logged in as `sunlit_divorce`; OTP completed by user.
 - [x] npm publish succeeded (`0.3.1`, 23 files).
 - Version: **`0.3.1`** (same version internally and publicly; no separate internal/external version).
-- GitHub repository creation needs the account authenticated (the existing `dsh-host-ops` uses `laughinbytes`).
+- [x] GitHub: authenticated as `laughinbytes`; repo public and pushed.
 
 ## Post-release
 
