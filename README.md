@@ -131,6 +131,11 @@ official ContextMeter: a segmented bar plus three rows (always available / loade
 freshness word, and one meta line (groups · storage · updated). There is no directory dump, no configuration, and
 no long explanatory copy. It uses official slots/theme tokens and follows the light/dark theme.
 
+## Development & release
+
+See [`docs/development.md`](docs/development.md) for the layered validation flow (link dev profile →
+npm artifact → staging composition → `next` dogfood → `latest`).
+
 ## Verification
 
 ```bash
