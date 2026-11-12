@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3 — 2026-11-12
+
+Wording only: PTC-compatible model-facing text, plus one concurrency invariant comment. No behavior change.
+
+- The catalog note and the `search_tools` description/returns no longer tell the model to call loaded tools "directly". In a PTC preset only `run_code` is callable directly, so the text now reads "directly, or as `tools.<name>` inside `run_code`"; the return also says "callable from your next step", which is true in both executors (a next request in native, a next program in PTC). Loading behavior is unchanged.
+- `search_tools` now carries an explicit comment that its read-state-to-restrict section must stay `await`-free and that it must not declare `isConcurrencySafe`: concurrency there would be both meaningless (pure in-memory work, no I/O) and harmful (a stale `loaded` snapshot would waste `maxResults` slots and make the deny set order-dependent).
+
 ## 0.3.2 — 2026-11-12
 
 Fix: background catalog generation failed 100% on DSH **0.2.2-rc.2** with

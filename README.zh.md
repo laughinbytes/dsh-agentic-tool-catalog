@@ -48,7 +48,7 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 
 | 工具 | 参数 | 行为 |
 |---|---|---|
-| `search_tools` | `query: string`，`limit?: number` | 按意图/关键词搜索目录（名字、描述、组名/组描述）；query 精确等于组名时整组加载（≤`groupMaxResults`）；加载后本会话可直接调用 |
+| `search_tools` | `query: string`，`limit?: number` | 按意图/关键词搜索目录（名字、描述、组名/组描述）；query 精确等于组名时整组加载（≤`groupMaxResults`）；加载后本会话即可调用；若当前是 PTC 预设，则在 `run_code` 程序里以 `tools.search_tools(...)` 调用 |
 | `catalog_status` | — | 只读 JSON：`catalog`（来源/新鲜度/来源类型/总数/分组/others）、`session`（已加载/待加载/restriction）、`generation`（次数、缓存命中、失败、重试、去重、stale 次数、增量次数、last error/ok、实例）、`storage`（模式/状态）、`warnings` |
 
 系统提示里有一个 `catalog:note` 段：列出延迟分组和数量；初始化中/刷新中会额外写明一行状态。

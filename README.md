@@ -59,7 +59,7 @@ agent needs tools
 
 | Tool | Parameters | Behavior |
 |---|---|---|
-| `search_tools` | `query: string`, `limit?: number` | Search the catalog by intent/keywords (name, description, group id/description). Exact group-name queries load the whole group (up to `groupMaxResults`). Loaded tools become callable for the rest of the session. |
+| `search_tools` | `query: string`, `limit?: number` | Search the catalog by intent/keywords (name, description, group id/description). Exact group-name queries load the whole group (up to `groupMaxResults`). Loaded tools become callable for the rest of the session (directly, or as `tools.<name>` inside `run_code`). |
 | `catalog_status` | — | Read-only JSON: `catalog` (source/freshness/origin/total/groups/others), `session` (loaded/pending/restriction), `generation` (runs, cache hits, failures, retries, dedupe, stale uses, incremental runs, last error/ok, instance), `storage` (mode/state), `warnings`. |
 
 A short `catalog:note` system-prompt section lists deferred groups and counts; during bootstrap/stale states it
