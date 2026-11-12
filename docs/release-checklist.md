@@ -13,15 +13,19 @@
       `generation.paused` is absent on a healthy host.
 - [ ] `npm run test:presentation` passes; `npm pack --dry-run` contains `lib/subagent-compat.js`.
 
-## 0.3.2 — 2026-11-12
+## 0.3.2 — 2026-11-12 (released)
 
-- [ ] `npm test` (unit + schema + real rc.1/rc.2 compat) and `npm run test:presentation`.
-- [ ] Live check on DSH 0.2.2-rc.2 desktop: `catalog_status` shows `freshness: "fresh"`,
-      `lastOkAt` set, `others: 0`; the generation child session log ends with
-      `tool/result structured_output ok` and `turn/end completed`.
-- [ ] `npm pack --dry-run`: file list includes `lib/subagent-compat.js`; size/files recorded.
-- [ ] `npm publish --access public`; verify `npm view dsh-agentic-tool-catalog@0.3.2 version`.
-- [ ] GitHub tag `v0.3.2` + Release notes pointing at the 0.3.2 CHANGELOG section.
+- [x] `npm test`: unit 77/77, real `dsh-tools` schema 29/29, real rc.1/rc.2 activation matrix 15/15;
+      `npm run test:presentation` passed.
+- [x] Live check on DSH 0.2.2-rc.2 desktop: `catalog_status` showed `freshness: "fresh"`,
+      `lastOkAt` set, `others: 0`; the generation child session (`da57fc4a…`) ended with
+      `tool/result structured_output ok` and `turn/end completed` (18 groups / 93 tools).
+- [x] `npm pack --dry-run`: 24 files, 367.9 kB; includes `lib/subagent-compat.js`.
+- [x] `npm publish --access public`: `dsh-agentic-tool-catalog@0.3.2` is `latest`
+      (https://www.npmjs.com/package/dsh-agentic-tool-catalog/v/0.3.2).
+- [x] GitHub tag `v0.3.2` + Release
+      (https://github.com/laughinbytes/dsh-agentic-tool-catalog/releases/tag/v0.3.2).
+- [ ] Desktop profile updated from 0.3.1 to 0.3.2 (pending user approval).
 
 ## 0.3.1 — 2026-11-11 (historical)
 
