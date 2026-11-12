@@ -36,6 +36,7 @@ const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 /** 兼容矩阵：键用于目录名，值是真实宿主版本。新增支持版本时在这里加一行。 */
 const HOSTS = [
+  { key: 'rc0', version: '0.2.1-rc.2' },
   { key: 'rc1', version: '0.2.2-rc.1' },
   { key: 'rc2', version: '0.2.2-rc.2' },
 ]
@@ -153,9 +154,9 @@ for (const [key, { version, Runtime }] of runtimes) {
   }
   check(result?.kind === 'local' && calls.length === 1, `${version} 接受适配器 spec 并进入 manager.startLocal`)
   const forwarded = calls[0]?.spec
-  if (key === 'rc1') {
-    check(forwarded?.request?.parent === agent, '0.2.2-rc.1 从 spec.request 读到 parent')
-    check(forwarded?.request?.maxDepth === 1 && forwarded?.request?.outputSchema === AGENT_GROUP_SCHEMA, '0.2.2-rc.1 从 spec.request 读到 maxDepth/outputSchema')
+  if (key !== 'rc2') {
+    check(forwarded?.request?.parent === agent, `${version} 从 spec.request 读到 parent`)
+    check(forwarded?.request?.maxDepth === 1 && forwarded?.request?.outputSchema === AGENT_GROUP_SCHEMA, `${version} 从 spec.request 读到 maxDepth/outputSchema`)
   } else {
     check(forwarded?.parent === agent, '0.2.2-rc.2 从 spec.parent 读到 parent')
     check(forwarded?.maxDepth === 1 && forwarded?.outputSchema === AGENT_GROUP_SCHEMA, '0.2.2-rc.2 从顶层读到 maxDepth/outputSchema')
@@ -180,7 +181,7 @@ for (const [key, { version, Runtime }] of runtimes) {
     signal: new AbortController().signal,
     delivery: 'caller',
   }
-  const candidate = key === 'rc1' ? flatOnly : nestedOnly
+  const candidate = key === 'rc2' ? nestedOnly : flatOnly
   const { runtime } = makeRuntime(Runtime, agent)
   try {
     await Runtime.prototype.startActivation.call(runtime, candidate)

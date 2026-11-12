@@ -3,7 +3,7 @@
 ## Compatibility gate (every release)
 
 - [ ] `npm test` passes, including `scripts/verify-subagent-compat.mjs`, which drives the **real**
-      `SubagentRuntime.startActivation` of `@deepseek-ai/dsh-subagent` `0.2.2-rc.1` and `0.2.2-rc.2`
+      `SubagentRuntime.startActivation` of `@deepseek-ai/dsh-subagent` `0.2.1-rc.2`, `0.2.2-rc.1` and `0.2.2-rc.2`
       (first run installs the pinned packages into `reference/tmp/`, gitignored).
 - [ ] A newly supported DSH version is added to `HOSTS` in the compat script, to `engines.dsh`, and
       to the README compatibility line. A dropped version is removed from all three.
@@ -15,7 +15,7 @@
 
 ## 0.3.2 — 2026-11-12 (released)
 
-- [x] `npm test`: unit 77/77, real `dsh-tools` schema 29/29, real rc.1/rc.2 activation matrix 15/15;
+- [x] `npm test`: unit 77/77, real `dsh-tools` schema 29/29, real 0.2.1-rc.2/0.2.2-rc.1/0.2.2-rc.2 activation matrix 21/21;
       `npm run test:presentation` passed.
 - [x] Live check on DSH 0.2.2-rc.2 desktop: `catalog_status` showed `freshness: "fresh"`,
       `lastOkAt` set, `others: 0`; the generation child session (`da57fc4a…`) ended with

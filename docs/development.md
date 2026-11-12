@@ -4,7 +4,7 @@ This repository is developed both in the `dsh-dev` workspace (shared plugin proc
 own DSH workspace. The release process follows the layered validation model:
 
 1. **G0 — code**: `npm test` (unit + real `dsh-tools` schema + real `@deepseek-ai/dsh-subagent`
-   0.2.2-rc.1/0.2.2-rc.2 activation matrix) and `npm run test:presentation`.
+   0.2.1-rc.2 / 0.2.2-rc.1 / 0.2.2-rc.2 activation matrix) and `npm run test:presentation`.
    The activation matrix is the gate for host API moves: when DSH changes the
    `startActivation()` spec again, add the new version to `HOSTS` in
    `scripts/verify-subagent-compat.mjs`, keep every supported shape covered, and update

@@ -24,7 +24,7 @@ plugin. The catalog saves context, not by making tasks cheaper to run.
 
 ## Good to know
 
-- Works with DSH `>=0.2.1-rc.2 <0.3.0`; tested on `0.2.2-rc.1` and `0.2.2-rc.2`.
+- Works with DSH `>=0.2.1-rc.2 <0.3.0`; tested on `0.2.1-rc.2`, `0.2.2-rc.1` and `0.2.2-rc.2`.
 - v1 covers **tools**; native skills keep their normal behavior.
 - The catalog is derived data and contains no messages, prompts, tool results or credentials.
 - It does **not** regenerate on a timer: only when the set of available tools changes. One-time
