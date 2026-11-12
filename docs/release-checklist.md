@@ -25,7 +25,7 @@
       (https://www.npmjs.com/package/dsh-agentic-tool-catalog/v/0.3.2).
 - [x] GitHub tag `v0.3.2` + Release
       (https://github.com/laughinbytes/dsh-agentic-tool-catalog/releases/tag/v0.3.2).
-- [ ] Desktop profile updated from 0.3.1 to 0.3.2 (pending user approval).
+- [x] Desktop profile updated 0.3.1 → 0.3.2 via plugin_manager (remove_bundle → install_bundle; hot, no App restart); `catalog_status.generation.activationShapes` = `["flat","nested"]`, catalog stayed fresh.
 
 ## 0.3.1 — 2026-11-11 (historical)
 
