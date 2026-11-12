@@ -98,7 +98,8 @@ dsh plugin --profile web add /path/to/dsh-agentic-tool-catalog
 dsh plugin add /path/to/dsh-agentic-tool-catalog
 ```
 
-Published package: `dsh-agentic-tool-catalog` (npm). Requires DSH `0.2.2-rc.1` or later.
+Published package: `dsh-agentic-tool-catalog` (npm). Requires DSH `>=0.2.1-rc.2 <0.3.0`;
+tested with `0.2.2-rc.1` and `0.2.2-rc.2` (both subagent activation shapes are supported).
 
 ```bash
 dsh plugin --profile web add dsh-agentic-tool-catalog

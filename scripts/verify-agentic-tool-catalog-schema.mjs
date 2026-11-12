@@ -77,7 +77,7 @@ if (NEED_ZOD) {
 }
 
 mkdirSync(PLUGIN_DIR, { recursive: true })
-for (const file of ['index.js', 'catalog.js', 'generation.js', 'store.js']) {
+for (const file of ['index.js', 'catalog.js', 'generation.js', 'store.js', 'subagent-compat.js']) {
   cpSync(join(PLUGIN, 'lib', file), join(PLUGIN_DIR, file))
 }
 

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.2 — 2026-11-12
+
+Fix: background catalog generation failed 100% on DSH **0.2.2-rc.2** with
+`AGENT_FAILED: Cannot read properties of undefined (reading 'id')`, plus hardening so the next
+host API move degrades gracefully instead of failing silently.
+
+- **Cause**: rc.2 flattened the `ctx.subagents.startActivation()` spec
+  (`SubagentActivationSpec`). `parent`, `prompt`, `maxDepth`, and `outputSchema` moved from
+  `spec.request.*` to the top level; `startActivation` now reads `spec.parent.id` directly.
+  0.3.1 still passed the 0.2.2-rc.1 nested shape, so `spec.parent` was `undefined` and every
+  generation threw before a child session was created. This was a host breaking change, not a
+  Computer Use plugin issue: an isolated DSH 0.2.2-rc.2 instance with only this plugin reproduced it.
+- **Compatibility adapter**: all version-shape knowledge now lives in `lib/subagent-compat.js`.
+  It sends the union of both shapes: request fields at the top level (0.2.2-rc.2+) and a
+  **non-enumerable** `request` property (0.2.1-rc.2 … 0.2.2-rc.1). Non-enumerability keeps rc.2's
+  external-provider rest-spread from forwarding the legacy nested object, while old versions still
+  read `spec.request`. Both host implementations ignore unknown keys, so one call supports both.
+- **Soft gate**: three consecutive shape rejections report `UNSUPPORTED_HOST`, pause automatic
+  generation for one hour, and keep the last-known-good catalog with an explicit
+  `catalog-generation-paused` warning instead of a stream of `AGENT_FAILED` retries. A plugin
+  reload clears the pause and the per-fingerprint backoff, so a fix takes effect immediately.
+- **Compatibility declaration**: `engines.dsh` is now the tested line `>=0.2.1-rc.2 <0.3.0-0`
+  instead of an open-ended range. `generation.activationShapes` reports `["flat","nested"]`.
+- **Tests**: `lib/subagent-compat.js` has a dedicated `scripts/verify-subagent-compat.mjs` that
+  drives the **real** `@deepseek-ai/dsh-subagent` `0.2.2-rc.1` and `0.2.2-rc.2`
+  `SubagentRuntime.startActivation` implementations: both accept the adapter spec, each reads its
+  own shape, a flat-only spec fails on rc.1, a nested-only spec fails on rc.2, and both versions
+  enforce the `outputSchema` capability. It runs as part of `npm test` (first run installs the two
+  pinned host packages into `reference/tmp/subagent-compat/`, gitignored).
+
 ## 0.3.1 — 2026-11-11
 
 Documentation-only release: the plugin page was rewritten around the user's questions (what it

@@ -26,6 +26,11 @@ import {
   createAgentGrouper,
   validateAgentGroups,
 } from '../lib/generation.js'
+import {
+  ACTIVATION_SHAPES,
+  buildSubagentActivationSpec,
+  isActivationShapeError,
+} from '../lib/subagent-compat.js'
 
 let passed = 0
 let failed = 0
@@ -143,14 +148,36 @@ const adapted = adaptAgentGroups(newerTools, validated.groups)
 check(adapted.others.includes('brand_new_tool'), '降级适配：新工具进 others')
 check(adapted.warnings.some((w) => w.kind === 'catalog-stale-groups'), '降级适配：显式 stale 告警')
 const fakeAgent = { session: { header: { origin: 'main' } } }
+let activationSpec
 const fakeSubagents = {
-  startActivation: async () => ({ result: Promise.resolve({ structured: validGroups }), dispose: async () => {} }),
+  startActivation: async (spec) => {
+    activationSpec = spec
+    return { result: Promise.resolve({ structured: validGroups }), dispose: async () => {} }
+  },
   getProvider: () => ({ name: 'spawn' }),
 }
 const grouper = createAgentGrouper({ get: (name) => (name === 'subagents' ? fakeSubagents : undefined) }, { catalogProvider: 'spawn', catalogTimeoutMs: 5000 })
 check(grouper.enabled() === true, '子代理客户端：服务可用')
 const generated = await grouper.generate({ agent: fakeAgent, tools: agentTools })
 check(generated.groups !== undefined && generated.groups.length === 6, '子代理客户端：返回合法分组')
+// 2026-11-12 回归：0.2.2-rc.2 把 SubagentActivationSpec 拍平（parent/prompt/maxDepth/outputSchema
+// 在顶层），旧插件只传 spec.request，rc.2 读 spec.parent.id 直接抛 TypeError。
+check(activationSpec?.parent === fakeAgent, '激活 spec：parent 在顶层（rc.2 契约）')
+check(activationSpec?.request?.parent === fakeAgent, '激活 spec：request.parent 保留（rc.1 兼容）')
+check(activationSpec?.outputSchema === AGENT_GROUP_SCHEMA && activationSpec?.maxDepth === 1, '激活 spec：outputSchema/maxDepth 在顶层')
+check(Array.isArray(activationSpec?.prompt) && activationSpec.prompt[0]?.type === 'text', '激活 spec：prompt 在顶层')
+check(activationSpec?.provider === 'spawn' && activationSpec?.delivery === 'caller', '激活 spec：provider/delivery 不变')
+// 直接模拟 rc.2 服务端的校验路径：只认 spec.parent，不认 spec.request.parent。
+const flatOnly = {
+  startActivation: async (spec) => {
+    if (spec.parent === undefined) throw new TypeError("Cannot read properties of undefined (reading 'id')")
+    return { result: Promise.resolve({ structured: validGroups }), dispose: async () => {} }
+  },
+  getProvider: () => ({ name: 'spawn' }),
+}
+const flatGrouper = createAgentGrouper({ get: (name) => (name === 'subagents' ? flatOnly : undefined) }, {})
+const flatResult = await flatGrouper.generate({ agent: fakeAgent, tools: agentTools })
+check(flatResult.groups !== undefined && flatGrouper.stats.failures === 0, '激活 spec 回归：rc.2 扁平契约下不再 AGENT_FAILED')
 const failGrouper = createAgentGrouper({ get: (name) => (name === 'subagents' ? {
   startActivation: async () => ({ result: Promise.resolve({ structured: { groups: [] } }), dispose: async () => {} }),
   getProvider: () => ({ name: 'spawn' }),
@@ -171,6 +198,59 @@ const noService = createAgentGrouper({ get: () => undefined }, {})
 check(noService.enabled() === false, '子代理客户端：无服务时 disabled')
 check((await noService.generate({ agent: fakeAgent, tools: agentTools })).error?.code === 'NO_SUBAGENT_SERVICE', '子代理客户端：无服务返回错误')
 check(noService.stats.failures === 1 && noService.stats.lastError?.code === 'NO_SUBAGENT_SERVICE', '子代理客户端：provider 不可用也计入 failures/lastError（观测缺口已修）')
+
+console.log('== 激活 spec 适配器（subagent-compat）==')
+{
+  const parent = { id: 'session-parent-test' }
+  const schema = { type: 'object', properties: { groups: { type: 'array' } }, required: ['groups'] }
+  const spec = buildSubagentActivationSpec({
+    provider: 'spawn',
+    label: 'test',
+    parent,
+    prompt: [{ type: 'text', text: 'hi' }],
+    maxDepth: 1,
+    outputSchema: schema,
+    signal: new AbortController().signal,
+    delivery: 'caller',
+  })
+  check(spec.parent === parent && spec.outputSchema === schema && spec.maxDepth === 1, '适配器：顶层字段（0.2.2-rc.2+）')
+  check(spec.request?.parent === parent && spec.request?.outputSchema === schema, '适配器：request 字段（0.2.1-rc.2 … 0.2.2-rc.1）')
+  check(!Object.keys(spec).includes('request'), '适配器：request 不可枚举（rc.2 外部 provider 展开时不会泄漏）')
+  check(
+    Object.keys(spec).sort().join(',') === 'delivery,label,maxDepth,outputSchema,parent,prompt,provider,signal',
+    '适配器：顶层键集合恰好是宿主认识的字段',
+  )
+  check(ACTIVATION_SHAPES.join('+') === 'flat+nested', '适配器：声明支持的两种形状')
+  check(isActivationShapeError(new TypeError("Cannot read properties of undefined (reading 'id')")), '形状错误识别：rc.2 的 id')
+  check(isActivationShapeError(new TypeError("Cannot read properties of undefined (reading 'maxDepth')")), '形状错误识别：rc.1 的 maxDepth')
+  check(!isActivationShapeError(new Error('boom')), '形状错误识别：普通 Error 不误判')
+  check(!isActivationShapeError(new TypeError('something else')), '形状错误识别：无关 TypeError 不误判')
+}
+
+console.log('== 软闸门（连续形状失败 → 暂停 → 到期恢复）==')
+{
+  const pauseStats = { runs: 0, cacheHits: 0, failures: 0, retries: 0, deduped: 0, staleUses: 0, incrementalRuns: 0, lastError: null, lastOkAt: null }
+  let shapeCalls = 0
+  const shapeFailer = createAgentGrouper({ get: (name) => (name === 'subagents' ? {
+    startActivation: async () => {
+      shapeCalls += 1
+      throw new TypeError("Cannot read properties of undefined (reading 'id')")
+    },
+    getProvider: () => ({ name: 'spawn' }),
+  } : undefined) }, {}, undefined, pauseStats)
+  for (let index = 0; index < 3; index += 1) {
+    const failed = await shapeFailer.generate({ agent: fakeAgent, tools: agentTools })
+    check(failed.error?.code === 'UNSUPPORTED_HOST', `软闸门：第 ${index + 1} 次形状失败标为 UNSUPPORTED_HOST`)
+  }
+  check(shapeCalls === 3 && pauseStats.paused?.code === 'UNSUPPORTED_HOST', '软闸门：连续 3 次后进入暂停')
+  const runsAtPause = pauseStats.runs
+  const paused = await shapeFailer.generate({ agent: fakeAgent, tools: agentTools })
+  check(paused.error?.code === 'UNSUPPORTED_HOST' && pauseStats.runs === runsAtPause && shapeCalls === 3, '软闸门：暂停期间不启动子代理、不刷计数')
+  check(typeof pauseStats.paused?.retryAt === 'number' && pauseStats.paused.retryAt > Date.now(), '软闸门：暂停带 retryAt')
+  pauseStats.paused.retryAt = Date.now() - 1
+  await shapeFailer.generate({ agent: fakeAgent, tools: agentTools })
+  check(shapeCalls === 4 && pauseStats.paused === undefined, '软闸门：到期后自动恢复尝试')
+}
 
 console.log(`\n${passed}/${passed + failed} 通过`)
 if (failed > 0) process.exit(1)

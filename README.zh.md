@@ -85,7 +85,8 @@ dsh plugin --profile web add /path/to/dsh-agentic-tool-catalog
 dsh plugin add /path/to/dsh-agentic-tool-catalog
 ```
 
-发布包：`dsh-agentic-tool-catalog`（npm）；要求 DSH `0.2.2-rc.1` 及以上。
+发布包：`dsh-agentic-tool-catalog`（npm）；要求 DSH `>=0.2.1-rc.2 <0.3.0`，
+已在 `0.2.2-rc.1` 与 `0.2.2-rc.2` 上验证（两种子代理激活 spec 形状都支持）。
 
 ## 性能（A/B：用 vs 不用）
 
