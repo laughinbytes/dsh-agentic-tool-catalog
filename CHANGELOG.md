@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.4 — 2026-11-14
+
+Patch: remove a dead client-side dependency and gate plugin compliance in `npm test`. No behavior change.
+
+- The client half no longer probes `@deepseek-ai/dsh-client-ui-primitives`. The official UI rules forbid a plugin client from loading any Harness Client package (`dsh-doc` → `references/practices.md` §UI, `references/ui-plugin.md`), the package no longer resolves on 0.2.2-rc.3, and the probe was already dead: `Tooltip` was always `null`, so the trigger always fell back to the native `title`. The trigger now carries `title` directly; markup, layout and behavior are unchanged.
+- Added `scripts/check-plugin-compliance.mjs` and `scripts/fixtures/compliance/` (verbatim copy of the dsh-dev checker, rule matrix `dsh-dev/docs/spec-matrix.md`, DSH 0.2.2-rc.3). `npm test` now ends with `node scripts/check-plugin-compliance.mjs --root . --strict` (also available as `npm run test:compliance`): A and B findings block a commit, C findings are reported for review.
+- Compliance state: `--strict` reports A=0 B=0 C=1; the C finding is the composer popover portaled to `document.body` (R-UI-04), which the host itself does, and it is a single 264px panel, not a second application.
+- Verification: `npm test` unit 77/77, real `dsh-tools` schema 29/29, real 0.2.1-rc.2 / 0.2.2-rc.1 / 0.2.2-rc.2 activation matrix 21/21, compliance A=0 B=0; `npm run test:presentation` passed.
+
 ## 0.3.3 — 2026-11-12
 
 Wording only: PTC-compatible model-facing text, plus one concurrency invariant comment. No behavior change.

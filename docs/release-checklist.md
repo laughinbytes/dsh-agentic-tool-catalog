@@ -13,6 +13,26 @@
       `generation.paused` is absent on a healthy host.
 - [ ] `npm run test:presentation` passes; `npm pack --dry-run` contains `lib/subagent-compat.js`.
 
+## 0.3.4 — 2026-11-14 (prepared, not published)
+
+Patch: the dead `@deepseek-ai/dsh-client-ui-primitives` load is removed from the client half and the
+plugin compliance checker is now gated in `npm test`. No behavior change.
+
+- [x] `npm test`: unit 77/77, real `dsh-tools` schema 29/29, real
+      0.2.1-rc.2 / 0.2.2-rc.1 / 0.2.2-rc.2 activation matrix 21/21, plugin compliance `--strict`
+      A=0 B=0 C=1 (the C item is the composer popover portal, R-UI-04: one 264px panel, not a second
+      application; the host portals its own popovers the same way).
+- [x] `npm run test:presentation` passed.
+- [x] `npm pack --dry-run`: version `0.3.4`, 24 files, 369.1 kB packed / 480.7 kB unpacked; includes
+      `lib/client.js`. `scripts/check-plugin-compliance.mjs` and `scripts/fixtures/compliance/` are
+      **not** in the tarball (dev-only, same as the other `scripts/` verifiers).
+- [x] Local git tag `v0.3.4` on `main`.
+- [ ] `npm publish` **not run**: the local npm token fails `npm whoami` with 401 (expired). After a
+      human runs `npm login`: `npm publish --access public --tag next`, dogfood, then
+      `npm dist-tag add dsh-agentic-tool-catalog@0.3.4 latest`.
+- [ ] Not installed into the daily profile in this round; switching the daily install is the user's
+      decision (the client half only loses a dead require, so no App restart is involved).
+
 ## 0.3.2 — 2026-11-12 (released)
 
 - [x] `npm test`: unit 77/77, real `dsh-tools` schema 29/29, real 0.2.1-rc.2/0.2.2-rc.1/0.2.2-rc.2 activation matrix 21/21;
