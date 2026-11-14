@@ -112,12 +112,21 @@ dsh plugin add /path/to/dsh-agentic-tool-catalog
 状态点/新鲜度 + 一行“分组 · 存储 · 更新时间”。没有目录名堆叠、没有配置项、没有长说明；
 使用官方 slot/主题变量，自动跟随明暗主题。
 
+## 开发与发布
+
+分层验证流程（link 开发 profile → npm 产物 → staging 组合 → `next` dogfood → `latest`）见
+[`docs/development.md`](docs/development.md)。
+
+插件规范由 `scripts/check-plugin-compliance.mjs` 检查（`npm test` 里以 `--strict` 运行）；
+规范来源：`dsh-dev/docs/spec-matrix.md`（DSH 0.2.2-rc.3）。
+
 ## 验证
 
 ```bash
 node scripts/verify-agentic-tool-catalog.mjs          # 模块/回归测试
 node scripts/verify-agentic-tool-catalog-schema.mjs   # 真实 dsh-tools/schemastery/storage-domain 编译
 node scripts/verify-presentation.mjs                 # 展示文件检查（locale/icon/detail）
+npm run test:compliance                              # DSH 插件规范矩阵（A+B 阻断）
 ```
 
 Benchmark 方法/数据见 [`benchmark/`](../../benchmark/discovery/)；发布数据卡按**用 vs 不用插件**对照。

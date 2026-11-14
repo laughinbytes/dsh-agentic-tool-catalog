@@ -137,12 +137,16 @@ no long explanatory copy. It uses official slots/theme tokens and follows the li
 See [`docs/development.md`](docs/development.md) for the layered validation flow (link dev profile →
 npm artifact → staging composition → `next` dogfood → `latest`).
 
+Plugin compliance is checked by `scripts/check-plugin-compliance.mjs` (run by `npm test` with `--strict`);
+its rule matrix is the canonical spec source `dsh-dev/docs/spec-matrix.md` (DSH 0.2.2-rc.3).
+
 ## Verification
 
 ```bash
 node scripts/verify-agentic-tool-catalog.mjs          # module/regression tests
 node scripts/verify-agentic-tool-catalog-schema.mjs   # real dsh-tools/schemastery/storage-domain compile
 node scripts/verify-presentation.mjs                 # presentation files (locale/icon/detail)
+npm run test:compliance                              # DSH plugin spec matrix (A+B blocking)
 ```
 
 Benchmark methodology and data live in [`benchmark/`](../../benchmark/discovery/) and are summarized in the
