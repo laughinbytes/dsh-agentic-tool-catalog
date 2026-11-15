@@ -32,8 +32,10 @@ plugin compliance checker is now gated in `npm test`. No behavior change.
       `9f666267ab9685c9a6a5416068b2e34b8eb5cad2`, 24 files; `latest` and `next` both 0.3.4.
       https://www.npmjs.com/package/dsh-agentic-tool-catalog/v/0.3.4
 - [x] GitHub Release: https://github.com/laughinbytes/dsh-agentic-tool-catalog/releases/tag/v0.3.4
-- [ ] Not installed into the daily profile in this round; switching the daily install is the user's
-      decision (hot version swap via plugin_manager; the client half only loses a dead require).
+- [x] Installed into the daily Desktop profile (`0.3.3` → `0.3.4`) via `plugin_manager`
+      `remove_bundle` → `install_bundle`; both returned `application: "applied"` with no
+      `restartReason`. `package.json` and the installed package report `0.3.4`; `catalog_status`
+      stayed `fresh` (83/83 tools, 17 groups, storage ready).
 - [ ] The rc.3 activation-matrix patch (`c184ddc`) is after this tag; ship it in 0.3.5.
 
 ## 0.3.2 — 2026-11-12 (released)
