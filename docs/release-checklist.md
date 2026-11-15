@@ -13,6 +13,23 @@
       `generation.paused` is absent on a healthy host.
 - [ ] `npm run test:presentation` passes; `npm pack --dry-run` contains `lib/subagent-compat.js`.
 
+## 0.3.5 — 2026-11-15 (prepared)
+
+Verification/docs only: add DSH `0.2.2-rc.3` to the real-host activation matrix. No runtime behavior
+change; `lib/subagent-compat.js` is unchanged.
+
+- [x] `npm test`: unit 77/77, real `dsh-tools` schema 29/29, real activation matrix 29/29, plugin
+      compliance `--strict` A=0 B=0 C=1.
+- [x] `npm run test:presentation` passed.
+- [x] `npm pack --dry-run`: version `0.3.5`, 24 files, 369.3 kB packed / 481.7 kB unpacked; includes
+      `lib/client.js` and `lib/subagent-compat.js`; dev-only `scripts/` are not in the tarball.
+- [ ] Local git tag `v0.3.5`; main and tag pushed.
+- [ ] `npm publish --access public --tag next`, then
+      `npm dist-tag add dsh-agentic-tool-catalog@0.3.5 latest`.
+- [ ] GitHub Release `v0.3.5`.
+- [ ] Daily Desktop profile upgraded from `0.3.4` to `0.3.5` (hot version swap; optional for this
+      docs/test-only patch).
+
 ## 0.3.4 — 2026-11-14 (published 2026-11-15)
 
 Patch: the dead `@deepseek-ai/dsh-client-ui-primitives` load is removed from the client half and the

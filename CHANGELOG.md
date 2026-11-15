@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.5 — 2026-11-15
+
+Verification only: cover DSH 0.2.2-rc.3 in the real-host activation matrix. No runtime behavior change.
+
+- `scripts/verify-subagent-compat.mjs` now drives `@deepseek-ai/dsh-subagent` 0.2.2-rc.3 in addition to 0.2.1-rc.2 / 0.2.2-rc.1 / 0.2.2-rc.2. `HOSTS` records each host's shape (`nested` for the first two, `flat` for rc.2/rc.3) instead of hard-coding "the only flat host is rc.2"; the regression anchor and outputSchema capability checks follow the recorded shape. Matrix: 29/29 (was 21/21).
+- rc.3 reads the same flat `spec.parent` activation shape and enforces the same `outputSchema` capability, so `lib/subagent-compat.js` is unchanged; `engines.dsh` already allowed rc.3.
+- README / plugin detail / development / release-checklist compatibility lines now list rc.3.
+- Verification: `npm test` unit 77/77, real `dsh-tools` schema 29/29, real activation matrix 29/29, compliance A=0 B=0; `npm run test:presentation` passed.
+
 ## 0.3.4 — 2026-11-14
 
 Patch: remove a dead client-side dependency and gate plugin compliance in `npm test`. No behavior change.
