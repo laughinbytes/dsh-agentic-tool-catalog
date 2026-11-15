@@ -13,7 +13,7 @@
       `generation.paused` is absent on a healthy host.
 - [ ] `npm run test:presentation` passes; `npm pack --dry-run` contains `lib/subagent-compat.js`.
 
-## 0.3.4 — 2026-11-14 (prepared, not published)
+## 0.3.4 — 2026-11-14 (published 2026-11-15)
 
 Patch: the dead `@deepseek-ai/dsh-client-ui-primitives` load is removed from the client half and the
 plugin compliance checker is now gated in `npm test`. No behavior change.
@@ -27,11 +27,14 @@ plugin compliance checker is now gated in `npm test`. No behavior change.
       `lib/client.js`. `scripts/check-plugin-compliance.mjs` and `scripts/fixtures/compliance/` are
       **not** in the tarball (dev-only, same as the other `scripts/` verifiers).
 - [x] Local git tag `v0.3.4` on `main`.
-- [ ] `npm publish` **not run**: the local npm token fails `npm whoami` with 401 (expired). After a
-      human runs `npm login`: `npm publish --access public --tag next`, dogfood, then
-      `npm dist-tag add dsh-agentic-tool-catalog@0.3.4 latest`.
+- [x] `npm publish --access public --tag next` (2026-11-15), then
+      `npm dist-tag add dsh-agentic-tool-catalog@0.3.4 latest`. Registry tarball sha1
+      `9f666267ab9685c9a6a5416068b2e34b8eb5cad2`, 24 files; `latest` and `next` both 0.3.4.
+      https://www.npmjs.com/package/dsh-agentic-tool-catalog/v/0.3.4
+- [x] GitHub Release: https://github.com/laughinbytes/dsh-agentic-tool-catalog/releases/tag/v0.3.4
 - [ ] Not installed into the daily profile in this round; switching the daily install is the user's
-      decision (the client half only loses a dead require, so no App restart is involved).
+      decision (hot version swap via plugin_manager; the client half only loses a dead require).
+- [ ] The rc.3 activation-matrix patch (`c184ddc`) is after this tag; ship it in 0.3.5.
 
 ## 0.3.2 — 2026-11-12 (released)
 
