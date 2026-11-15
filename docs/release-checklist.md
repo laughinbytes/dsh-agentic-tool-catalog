@@ -29,8 +29,10 @@ change; `lib/subagent-compat.js` is unchanged.
       `8b207efba566b88be1eedc6bfe6085df00a26c0f`, 24 files; `latest` and `next` both 0.3.5.
       https://www.npmjs.com/package/dsh-agentic-tool-catalog/v/0.3.5
 - [x] GitHub Release: https://github.com/laughinbytes/dsh-agentic-tool-catalog/releases/tag/v0.3.5
-- [ ] Daily Desktop profile upgraded from `0.3.4` to `0.3.5` (hot version swap; optional for this
-      docs/test-only patch).
+- [x] Daily Desktop profile upgraded from `0.3.4` to `0.3.5` via `plugin_manager`
+      `remove_bundle` → `install_bundle`; both returned `application: "applied"` with no
+      `restartReason`. `package.json` and the installed package report `0.3.5`; `catalog_status`
+      stayed `fresh` for the current tool set with storage `ready`.
 
 ## 0.3.4 — 2026-11-14 (published 2026-11-15)
 
