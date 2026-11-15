@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 /**
- * verify-subagent-compat.mjs —— 用**真实的** `@deepseek-ai/dsh-subagent` 0.2.2-rc.1 / 0.2.2-rc.2
- * 验证 `lib/subagent-compat.js` 产出的 activation spec 能被两种宿主形状接受。
+ * verify-subagent-compat.mjs —— 用**真实的** `@deepseek-ai/dsh-subagent` 0.2.1-rc.2 /
+ * 0.2.2-rc.1 / 0.2.2-rc.2 / 0.2.2-rc.3 验证 `lib/subagent-compat.js` 产出的 activation spec
+ * 能被两种宿主形状接受。
  *
  * 为什么需要：0.2.2-rc.2 把 SubagentActivationSpec 拍平，0.3.1 因此 9/9 次
  * `AGENT_FAILED: Cannot read properties of undefined (reading 'id')`。
- * 单元测试只能模拟宿主；这里直接调用两个真实版本的 `SubagentRuntime.prototype.startActivation`，
+ * 单元测试只能模拟宿主；这里直接调用每个真实版本的 `SubagentRuntime.prototype.startActivation`，
  * 证明：
- *   - 适配器同时满足 rc.1（读 spec.request）与 rc.2（读 spec.parent）；
+ *   - 适配器同时满足 nested（读 spec.request）与 flat（读 spec.parent）两种形状；
  *   - 只有旧嵌套形状 / 只有新平铺形状时，对应版本会失败（回归锚点）；
- *   - rc.2 看不到不可枚举的 request（外部 provider 展开不会泄漏）；
- *   - 两个版本的能力检查都能看到 outputSchema（旧写法在 rc.2 下会被静默跳过）。
+ *   - flat 版本看不到不可枚举的 request（外部 provider 展开不会泄漏）；
+ *   - 每个版本的能力检查都能看到 outputSchema（旧写法在 flat 版本下会被静默跳过）。
  *
- * 依赖：npm（首次运行安装两个版本到 reference/tmp/subagent-compat/，gitignored，可复用）。
+ * 依赖：npm（首次运行安装各版本到 reference/tmp/subagent-compat/，gitignored，可复用）。
  * 用法：node scripts/verify-subagent-compat.mjs [--refresh]
  */
 import { spawnSync } from 'node:child_process'
@@ -34,11 +35,12 @@ const WORK = join(ROOT, 'reference', 'tmp', 'subagent-compat')
 const REFRESH = process.argv.includes('--refresh')
 const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
-/** 兼容矩阵：键用于目录名，值是真实宿主版本。新增支持版本时在这里加一行。 */
+/** 兼容矩阵：键用于目录名，值是真实宿主版本；shape 是读写 activation spec 的形状。 */
 const HOSTS = [
-  { key: 'rc0', version: '0.2.1-rc.2' },
-  { key: 'rc1', version: '0.2.2-rc.1' },
-  { key: 'rc2', version: '0.2.2-rc.2' },
+  { key: 'rc0', version: '0.2.1-rc.2', shape: 'nested' },
+  { key: 'rc1', version: '0.2.2-rc.1', shape: 'nested' },
+  { key: 'rc2', version: '0.2.2-rc.2', shape: 'flat' },
+  { key: 'rc3', version: '0.2.2-rc.3', shape: 'flat' },
 ]
 
 let passed = 0
@@ -135,12 +137,12 @@ for (const host of HOSTS) {
   const dir = ensureHost(host)
   const module = await import(pathToFileURL(join(dir, 'node_modules', '@deepseek-ai', 'dsh-subagent', 'lib', 'index.js')).href)
   check(typeof module.SubagentRuntime === 'function', `${host.version} 导出真实 SubagentRuntime`)
-  runtimes.set(host.key, { version: host.version, Runtime: module.SubagentRuntime })
+  runtimes.set(host.key, { version: host.version, shape: host.shape, Runtime: module.SubagentRuntime })
 }
 
 console.log(`== 适配器形状（${ACTIVATION_SHAPES.join(' + ')}）==`)
 check(ACTIVATION_SHAPES.join('+') === 'flat+nested', '适配器声明 flat+nested 两种形状')
-for (const [key, { version, Runtime }] of runtimes) {
+for (const { version, shape, Runtime } of runtimes.values()) {
   const { runtime, calls } = makeRuntime(Runtime, agent)
   const fakeService = {
     startActivation: (activationSpec) => Runtime.prototype.startActivation.call(runtime, activationSpec),
@@ -154,19 +156,19 @@ for (const [key, { version, Runtime }] of runtimes) {
   }
   check(result?.kind === 'local' && calls.length === 1, `${version} 接受适配器 spec 并进入 manager.startLocal`)
   const forwarded = calls[0]?.spec
-  if (key !== 'rc2') {
+  if (shape === 'flat') {
+    check(forwarded?.parent === agent, `${version} 从 spec.parent 读到 parent`)
+    check(forwarded?.maxDepth === 1 && forwarded?.outputSchema === AGENT_GROUP_SCHEMA, `${version} 从顶层读到 maxDepth/outputSchema`)
+    check(!Object.keys(forwarded).includes('request'), `${version} 的 spec 顶层没有可枚举 request（外部 provider 不会收到它）`)
+    check(forwarded?.request?.parent === agent, `${version} 仍可属性读取 spec.request（旧版兼容面保留）`)
+  } else {
     check(forwarded?.request?.parent === agent, `${version} 从 spec.request 读到 parent`)
     check(forwarded?.request?.maxDepth === 1 && forwarded?.request?.outputSchema === AGENT_GROUP_SCHEMA, `${version} 从 spec.request 读到 maxDepth/outputSchema`)
-  } else {
-    check(forwarded?.parent === agent, '0.2.2-rc.2 从 spec.parent 读到 parent')
-    check(forwarded?.maxDepth === 1 && forwarded?.outputSchema === AGENT_GROUP_SCHEMA, '0.2.2-rc.2 从顶层读到 maxDepth/outputSchema')
-    check(!Object.keys(forwarded).includes('request'), '0.2.2-rc.2 的 spec 顶层没有可枚举 request（外部 provider 不会收到它）')
-    check(forwarded?.request?.parent === agent, '0.2.2-rc.2 仍可属性读取 spec.request（旧版兼容面保留）')
   }
 }
 
 console.log('== 回归锚点：单一形状在另一版本上必须失败 ==')
-for (const [key, { version, Runtime }] of runtimes) {
+for (const { version, shape, Runtime } of runtimes.values()) {
   const flatOnly = { ...pluginRequest(agent) }
   delete flatOnly.request
   const nestedOnly = {
@@ -181,7 +183,7 @@ for (const [key, { version, Runtime }] of runtimes) {
     signal: new AbortController().signal,
     delivery: 'caller',
   }
-  const candidate = key === 'rc2' ? nestedOnly : flatOnly
+  const candidate = shape === 'flat' ? nestedOnly : flatOnly
   const { runtime } = makeRuntime(Runtime, agent)
   try {
     await Runtime.prototype.startActivation.call(runtime, candidate)
@@ -192,7 +194,7 @@ for (const [key, { version, Runtime }] of runtimes) {
 }
 
 console.log('== 能力检查覆盖（outputSchema）==')
-for (const [key, { version, Runtime }] of runtimes) {
+for (const { version, Runtime } of runtimes.values()) {
   const { runtime } = makeRuntime(Runtime, agent, { outputSchema: false })
   try {
     await Runtime.prototype.startActivation.call(runtime, buildSubagentActivationSpec(pluginRequest(agent)))

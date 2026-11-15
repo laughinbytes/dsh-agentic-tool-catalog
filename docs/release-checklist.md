@@ -3,7 +3,7 @@
 ## Compatibility gate (every release)
 
 - [ ] `npm test` passes, including `scripts/verify-subagent-compat.mjs`, which drives the **real**
-      `SubagentRuntime.startActivation` of `@deepseek-ai/dsh-subagent` `0.2.1-rc.2`, `0.2.2-rc.1` and `0.2.2-rc.2`
+      `SubagentRuntime.startActivation` of `@deepseek-ai/dsh-subagent` `0.2.1-rc.2`, `0.2.2-rc.1`, `0.2.2-rc.2` and `0.2.2-rc.3`
       (first run installs the pinned packages into `reference/tmp/`, gitignored).
 - [ ] A newly supported DSH version is added to `HOSTS` in the compat script, to `engines.dsh`, and
       to the README compatibility line. A dropped version is removed from all three.
