@@ -54,8 +54,12 @@ is capped (default 64). Full detail in `CHANGELOG.md`.
       (with `archived:false` to exclude already-archived rows) must stop growing. Not exercised during
       the release window because no catalog fingerprint changed in the upgraded profile.
 - [x] Unrelated warning observed during the upgrade (handed to the browser-use workspace, not caused
-      by this plugin): `@local/browser-use` failed to import `src/decisions.js`; session
-      `session-2fd8f5f0-08cf-454a-8311-d4d576eadb4f` is investigating its packaging.
+      by this plugin): `@local/browser-use` 3.0.1 shipped a handwritten tarball `files` whitelist that
+      omitted `src/decisions.js` / `src/presence.js`; it only broke once the profile switched from a
+      `link:` to a `file:` install and a recombination re-imported the provider. Fixed in browser-use
+      3.0.2 (commit `6003834`: whitelist + `check-pack-files.mjs` gate; evidence note `810fd5c`); the
+      daily profile now has `@local/browser-use` 3.0.2 installed, `plugin_manager` warnings are gone and
+      `browser_status` is live.
 
 ## 0.3.5 — 2026-11-15 (published 2026-11-15)
 
