@@ -13,6 +13,50 @@
       `generation.paused` is absent on a healthy host.
 - [ ] `npm run test:presentation` passes; `npm pack --dry-run` contains `lib/subagent-compat.js`.
 
+## 0.3.6 — 2026-11-16 (published 2026-11-16)
+
+Fix: catalog generation could leave real sub-agent sessions running past the timeout and accumulate
+them forever (919 leaked `origin=subagent` sessions observed; one generation ran 4.5 min with
+`catalogTimeoutMs=120000`). Timeouts now call `subagents.interrupt()` + `activation.dispose()`,
+every generation attempt archives its child session, generation is process-wide limited (default 1),
+failure backoff is exponential, the incremental prompt is fingerprint-scoped, and `tables.catalogs`
+is capped (default 64). Full detail in `CHANGELOG.md`.
+
+- [x] `npm test`: unit 107/107, real `dsh-tools` / `schemastery` / `storage-domain` schema 43/43,
+      real activation matrix 33/33 (now also asserts every supported host exposes `interrupt()`),
+      plugin compliance `--strict` A=0 B=0 C=1 (the C item is the known client portal R-UI-04).
+- [x] `npm run test:presentation` passed.
+- [x] Isolated staging load (verify-ui + headless Chrome, no user profile): plugin loaded in an
+      isolated DSH Web profile, pill/panel rendered, **0 console errors**; the isolated profile has no
+      model credentials, so a real generation could not be exercised there.
+- [x] `npm pack --dry-run`: version `0.3.6`, 26 files, 381.0 kB packed / 513.2 kB unpacked; includes
+      the new `lib/generation-queue.js` / `lib/session-retire.js`; dev-only `scripts/` are not in the
+      tarball. Registry tarball sha1 `50f6f756a23fbbfa7bd37b15df7d5b4a73640612`, 26 files (verified
+      by downloading the published tarball and listing it).
+- [x] Local git tag `v0.3.6`; main and tag pushed (HEAD `8c61656`).
+- [x] `npm publish --access public --tag next` (Web-auth 2FA by the user; npm CLI reported
+      `PUT 202` / exit 0 and the registry was available after processing), then
+      `npm dist-tag add dsh-agentic-tool-catalog@0.3.6 latest`. `latest` and `next` are both 0.3.6.
+      https://www.npmjs.com/package/dsh-agentic-tool-catalog/v/0.3.6
+- [x] GitHub Release: https://github.com/laughinbytes/dsh-agentic-tool-catalog/releases/tag/v0.3.6
+      (created from the existing tag and marked Latest).
+- [x] Daily Desktop profile upgraded `0.3.5` → `0.3.6` via `plugin_manager`
+      `remove_bundle` → `install_bundle dsh-agentic-tool-catalog@0.3.6`; both returned
+      `application: "applied"` with no `restartReason`. Installed package reports `0.3.6` and contains
+      `lib/generation-queue.js` / `lib/session-retire.js`.
+- [x] Post-upgrade `catalog_status` check: catalog `fresh` (63 tools / 13 groups), storage `ready`
+      (entries 64 / maxEntries 64 / evicted 174 — eviction ran on hydrate and converged the old 232
+      fingerprints), `generation.queue = { maxConcurrent: 1, maxPending: 1, active: [], pending: [] }`,
+      `timeouts` / `sessionsArchived` / `sessionArchiveFailures` counters present,
+      `activationShapes: ["flat","nested"]`.
+- [ ] Live generation dogfood after upgrade: first real catalog change should show
+      `generation.timeouts` / `sessionsArchived` behaving, and `dsh_session_manage list kind=subagent`
+      (with `archived:false` to exclude already-archived rows) must stop growing. Not exercised during
+      the release window because no catalog fingerprint changed in the upgraded profile.
+- [x] Unrelated warning observed during the upgrade (handed to the browser-use workspace, not caused
+      by this plugin): `@local/browser-use` failed to import `src/decisions.js`; session
+      `session-2fd8f5f0-08cf-454a-8311-d4d576eadb4f` is investigating its packaging.
+
 ## 0.3.5 — 2026-11-15 (published 2026-11-15)
 
 Verification/docs only: add DSH `0.2.2-rc.3` to the real-host activation matrix. No runtime behavior
