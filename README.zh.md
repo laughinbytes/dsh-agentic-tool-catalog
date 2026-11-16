@@ -19,7 +19,8 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
   而不是按名字前缀；
 - **零插件配合**：无需其他插件声明字段、元数据或改代码；装了就会被自动发现；
 - **本地优先**：生成使用本机 DSH 模型，不需要外部服务；
-- **可靠性**：严格校验、失败带反馈重试一次、同指纹单飞、官方 Storage 持久化、目录变化增量重生成；
+- **可靠性**：严格校验、失败带反馈重试一次、进程级单飞（同一时间只跑一个真实生成子代理，预热也受限）、
+  超时真正取消并归档子会话、官方 Storage 持久化、目录变化增量重生成；
   生成没完成时状态会显式标 `stale`（或使用扁平引导目录），**不会静默失败**；
 - **可观测**：`catalog_status` 提供目录新鲜度/来源、分组、已加载、生成与存储健康状态。
 
@@ -36,9 +37,15 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
           （状态 stale + 显式告警 + 退避重试）或扁平引导目录
 ```
 
-- **新会话**创建时立即预热生成；**恢复的旧会话**在第一条用户消息/搜索时才生成；**目录变化**立即重新生成（优先增量）；
+- **新会话**在全局空闲时立即预热生成；**恢复的旧会话**在第一条用户消息/搜索时才生成；**目录变化**立即重新生成（优先增量）；
+- **同一时间只跑一个生成子代理**：进程级上限 `catalogMaxConcurrentGenerations`（默认 1）；
+  同一工具指纹的请求跨会话合并；已有生成在跑时预热直接跳过；失败后按指数退避（10 分钟 → 6 小时）重试，
+  不再每次 prompt 都重起；
+- **生成会话不泄漏**：超时会取消子代理并等待其结束；每次尝试的 `origin=subagent` 会话之后都会归档
+  （从所有会话列表隐藏、停掉残留活动）。`catalogArchiveChildSessions` 默认 `true`，排障时可关；
 - **生成由工具集决定，不是按时间**：同一份工具指纹只生成一次，结果缓存进官方 Storage，跨会话/重启复用；
   **没有定时刷新**——只有工具集真的变了（装/卸插件、MCP server 上下线、preset 变化等）才会重新生成。
+  `catalogs` 表最多保留 `catalogCacheMaxEntries`（默认 64）个指纹，超出按创建时间淘汰最旧。
 - 工具用 `agent.ctx.tools.restrict({ deny })` 从模型请求中隐藏，`search_tools` 命中后通过 DSH 原生
   tool-addition 机制在会话中途释放；
 - 缓存走官方 `ctx.storageDomain`（domain `agentic_tool_catalog`）；若 profile 没有 storage 服务，
@@ -49,7 +56,7 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 | 工具 | 参数 | 行为 |
 |---|---|---|
 | `search_tools` | `query: string`，`limit?: number` | 按意图/关键词搜索目录（名字、描述、组名/组描述）；query 精确等于组名时整组加载（≤`groupMaxResults`）；加载后本会话即可调用；若当前是 PTC 预设，则在 `run_code` 程序里以 `tools.search_tools(...)` 调用 |
-| `catalog_status` | — | 只读 JSON：`catalog`（来源/新鲜度/来源类型/总数/分组/others）、`session`（已加载/待加载/restriction）、`generation`（次数、缓存命中、失败、重试、去重、stale 次数、增量次数、last error/ok、实例）、`storage`（模式/状态）、`warnings` |
+| `catalog_status` | — | 只读 JSON：`catalog`（来源/新鲜度/来源类型/总数/分组/others）、`session`（已加载/待加载/restriction）、`generation`（次数、缓存命中、失败、超时、重试、去重、stale 次数、增量次数、已归档子会话、queue 活动/排队/合并/跳过、last error/ok、实例）、`storage`（模式/条数/上限/已淘汰）、`warnings` |
 
 系统提示里有一个 `catalog:note` 段：列出延迟分组和数量；初始化中/刷新中会额外写明一行状态。
 
@@ -66,7 +73,10 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
     extraKeepResident: []    # 追加"必须常驻"的 glob
     extraDeferred: []        # 强制按需的 glob
     catalogProvider: spawn   # 生成用子代理 provider
-    catalogTimeoutMs: 120000 # 单次生成超时
+    catalogTimeoutMs: 120000 # 单次生成超时（到点会取消子代理，不只是 abort）
+    catalogMaxConcurrentGenerations: 1 # 进程级并发生成上限（夹在 1..4）
+    catalogCacheMaxEntries: 64 # 官方 Storage 最多保留的目录指纹数
+    catalogArchiveChildSessions: true # 每次生成尝试结束后归档子会话
     catalogResetNonce: ''    # 缓存命名空间；改它可强制重新生成
 ```
 
@@ -135,6 +145,8 @@ Benchmark 方法/数据见 [`benchmark/`](../../benchmark/discovery/)；发布�
 
 - 缓存是**派生数据**：丢了最多重新生成一次（每个目录一次）；它不是用户数据，不做跨介质迁移；
 - 冷启动首次没有目录时，会先用扁平引导目录，后台生成完成后自动替换；之后重启/目录变化走持久化/增量路径；
+- 生成子会话是**归档**而非删除：和普通归档会话一样日志仍留在磁盘，只是从会话列表隐藏；
+  0.3.6 之前版本已经泄漏的会话不会被自动清理，需要的话手动归档一次；
 - 生成质量取决于配置的模型：插件会严格校验、重试并在状态里显式标注，但不会"偷偷把坏分组当成正常"；
 - 暂无 UI 仪表盘（`catalog_status` 是观测入口）；目前只处理 tools（不含 skills）；数百个工具以上的规模尚未基准测试；
 - 依赖公开的 `tools.definitions/restrict` 与官方 `storageDomain` API，遵循 DSH `0.2.x` 的稳定性边界。

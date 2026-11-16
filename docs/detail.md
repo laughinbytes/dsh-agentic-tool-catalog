@@ -29,5 +29,8 @@ plugin. The catalog saves context, not by making tasks cheaper to run.
 - The catalog is derived data and contains no messages, prompts, tool results or credentials.
 - It does **not** regenerate on a timer: only when the set of available tools changes. One-time
   generation is cached, so a stable tool set costs nothing extra after the first run.
-- If a refresh fails, the last successful catalog stays active and retries; it never silently
-  hides tools.
+- Generation is serialized app-wide (one real generator at a time). A timed-out generation is
+  cancelled immediately, and each background child session is archived afterwards, so generations
+  never pile up in your session list.
+- If a refresh fails, the last successful catalog stays active and retries with exponential backoff;
+  it never silently hides tools.

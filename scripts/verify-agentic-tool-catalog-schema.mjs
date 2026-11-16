@@ -77,7 +77,7 @@ if (NEED_ZOD) {
 }
 
 mkdirSync(PLUGIN_DIR, { recursive: true })
-for (const file of ['index.js', 'catalog.js', 'generation.js', 'store.js', 'subagent-compat.js']) {
+for (const file of ['index.js', 'catalog.js', 'generation.js', 'generation-queue.js', 'session-retire.js', 'store.js', 'subagent-compat.js']) {
   cpSync(join(PLUGIN, 'lib', file), join(PLUGIN_DIR, file))
 }
 
@@ -100,6 +100,10 @@ console.log('== Client 半边与只读路由 ==')
   check(clientSource.includes('/plugins/agentic-tool-catalog/events') && clientSource.includes('EventSource'), 'client 使用 SSE 事件流（非轮询）')
   const hostSource = readFileSync(join(PLUGIN, 'lib', 'index.js'), 'utf8')
   check(hostSource.includes('/plugins/agentic-tool-catalog/snapshot'), 'host 注册只读状态路由')
+  check(hostSource.includes('generationQueue') && hostSource.includes('catalogMaxConcurrentGenerations'), 'host 接入进程级生成调度（全局限流）')
+  const generationSource = readFileSync(join(PLUGIN, 'lib', 'generation.js'), 'utf8')
+  check(generationSource.includes('interrupt(') && generationSource.includes('GENERATION_TEARDOWN_GRACE_MS'), 'generation 超时路径显式 interrupt + await dispose')
+  check(generationSource.includes('createChildSessionRetirer'), 'generation 每次尝试后归档子会话')
   check(hostSource.includes('/plugins/agentic-tool-catalog/events') && hostSource.includes('text/event-stream'), 'host 注册 SSE 事件流')
   check(hostSource.includes('withDescriptions: true'), '状态路由返回分组描述（面板展示用）')
 }
@@ -118,6 +122,9 @@ if (defaults) {
   eq(defaults.extraDeferred, [], '默认 extraDeferred=[]')
   eq(defaults.catalogProvider, 'spawn', '默认 catalogProvider=spawn')
   eq(defaults.catalogTimeoutMs, 120000, '默认 catalogTimeoutMs=120000')
+  eq(defaults.catalogMaxConcurrentGenerations, 1, '默认 catalogMaxConcurrentGenerations=1（全局单飞）')
+  eq(defaults.catalogCacheMaxEntries, 64, '默认 catalogCacheMaxEntries=64')
+  eq(defaults.catalogArchiveChildSessions, true, '默认 catalogArchiveChildSessions=true')
   eq(defaults.catalogResetNonce, '', '默认 catalogResetNonce 为空')
   check(!('strategy' in defaults), 'Config 无 strategy 字段')
   check(!('strategyFile' in defaults), 'Config 无 strategyFile')
@@ -158,6 +165,49 @@ if (statusTool) {
   }
 }
 check(typeof disposer === 'function', '插件实例 effect 返回 disposer')
+
+
+console.log('== 目录缓存淘汰（catalogs 条数上限）==')
+{
+  const { createCatalogStore } = await import(pathToFileURL(join(PLUGIN_DIR, 'store.js')).href)
+  const tables = { catalogs: new Map(), state: new Map() }
+  const fakeDomain = {
+    table(name) {
+      const records = tables[name]
+      if (records === undefined) throw new Error(`unknown table ${name}`)
+      return {
+        entries: () => records.entries(),
+        get: (key) => records.get(key),
+        put: async (key, value) => { records.set(key, value) },
+        delete: async (key) => { records.delete(key) },
+      }
+    },
+    close() {},
+  }
+  const makeCtx = () => ({
+    get(name) { return name === 'storageDomain' ? { open: async () => fakeDomain } : undefined },
+    effect(fn) { fn() },
+    logger: { warn() {} },
+  })
+  const makeShared = () => ({ groups: new Map(), catalogTimes: new Map(), catalogCache: new Map(), lastGood: null, failures: new Map() })
+  const shared = makeShared()
+  const store = createCatalogStore(makeCtx(), shared, { warn() {} }, { maxEntries: 3 })
+  eq(await store.whenReady(), true, 'fake storageDomain 打开成功')
+  for (let index = 0; index < 5; index += 1) {
+    store.saveGroups(`fp-${index}`, [{ id: `group-${index}`, description: 'g', tools: [] }])
+  }
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  eq([...shared.groups.keys()].sort().join(','), 'fp-2,fp-3,fp-4', '内存 groups 按 createdAt 只保留最新 maxEntries 个')
+  eq([...tables.catalogs.keys()].sort().join(','), 'fp-2,fp-3,fp-4', '官方 Storage catalogs 同步淘汰最旧指纹')
+  eq(store.info.evicted, 2, 'evicted 计数')
+  eq(store.status().entries, 3, 'status.entries 报告当前条数')
+  eq(store.status().maxEntries, 3, 'status.maxEntries 报告上限')
+  const sharedAfterRestart = makeShared()
+  const reopened = createCatalogStore(makeCtx(), sharedAfterRestart, { warn() {} }, { maxEntries: 3 })
+  await reopened.whenReady()
+  eq([...sharedAfterRestart.groups.keys()].sort().join(','), 'fp-2,fp-3,fp-4', '重启 hydrate 后仍不超过上限')
+  eq(sharedAfterRestart.catalogTimes.size, 3, 'hydrate 恢复 createdAt（后续淘汰仍然有效）')
+}
 
 // 确认测试产物可重建，不进入 git（reference/tmp/ 已被 .gitignore 忽略）。
 const gitignore = readFileSync(join(ROOT, '.gitignore'), 'utf8')

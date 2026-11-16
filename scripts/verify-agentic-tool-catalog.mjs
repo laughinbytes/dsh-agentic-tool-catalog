@@ -31,6 +31,7 @@ import {
   buildSubagentActivationSpec,
   isActivationShapeError,
 } from '../lib/subagent-compat.js'
+import { createGenerationQueue, SKIP_GENERATION } from '../lib/generation-queue.js'
 
 let passed = 0
 let failed = 0
@@ -250,6 +251,220 @@ console.log('== 软闸门（连续形状失败 → 暂停 → 到期恢复）=='
   pauseStats.paused.retryAt = Date.now() - 1
   await shapeFailer.generate({ agent: fakeAgent, tools: agentTools })
   check(shapeCalls === 4 && pauseStats.paused === undefined, '软闸门：到期后自动恢复尝试')
+}
+
+
+console.log('== 生成生命周期：超时真正取消子代理 + 子会话归档 ==')
+{
+  // 真实宿主语义（dsh-subagent 0.2.2-rc.3 类型契约）：activation 发布之后启动 signal 不再
+  // 终止子 turn，dispose() 才是 cancel + whenIdle + flush + release。旧实现只 abort 然后
+  // await result，于是 120s 超时后仍等子 turn 自然结束（实测 4 分半）；这里用“结果永不自然
+  // settle”的假宿主把该语义固化成回归测试。
+  const state = { running: false, starts: 0, disposed: 0, interrupted: 0, archived: [] }
+  const host = {
+    startActivation: async () => {
+      state.starts += 1
+      state.running = true
+      const result = Promise.withResolvers()
+      return {
+        childId: 'child-timeout-1',
+        result: result.promise,
+        dispose: async () => {
+          state.disposed += 1
+          state.running = false
+          result.resolve({ output: [], stopReason: 'aborted' })
+        },
+      }
+    },
+    interrupt: (childId, authority) => {
+      state.interrupted += 1
+      state.interrupt = { childId, authority }
+    },
+    getProvider: () => ({ name: 'spawn' }),
+  }
+  const timeoutCtx = {
+    get(name) {
+      if (name === 'subagents') return host
+      if (name === 'workspaceRegistry') {
+        return { archiveSession: async (childId, options) => { state.archived.push({ childId, options }) } }
+      }
+      return undefined
+    },
+  }
+  const timeoutStats = { runs: 0, cacheHits: 0, failures: 0, retries: 0, deduped: 0, staleUses: 0, incrementalRuns: 0, lastError: null, lastOkAt: null }
+  const timeoutGrouper = createAgentGrouper(timeoutCtx, { catalogTimeoutMs: 40 }, undefined, timeoutStats)
+  const startedAt = Date.now()
+  const timedOut = await timeoutGrouper.generate({ agent: fakeAgent, tools: agentTools })
+  const elapsed = Date.now() - startedAt
+  check(timedOut.error?.code === 'TIMEOUT', `超时返回 TIMEOUT（实际 ${timedOut.error?.code}）`)
+  check(elapsed < 1500, `超时在收尾预算内返回（${elapsed}ms；旧实现会一直等子 turn 自然结束）`)
+  check(state.running === false, '返回时子代理已停止运行（dispose 已 cancel 并等 whenIdle）')
+  check(state.interrupted === 1 && state.disposed === 1, '超时路径先显式 interrupt、再 dispose（各一次）')
+  check(state.interrupt?.childId === 'child-timeout-1' && state.interrupt?.authority?.kind === 'ancestor', 'interrupt 使用 childId + ancestor authority')
+  check(state.archived.length === 1 && state.archived[0].childId === 'child-timeout-1' && state.archived[0].options?.stopActivity === true, '超时后归档子会话（archiveSession + stopActivity）')
+  check(timeoutStats.timeouts === 1 && timeoutStats.lastError?.code === 'TIMEOUT' && timeoutStats.failures === 1, '超时计入 stats.timeouts/lastError/failures')
+  check(state.starts === 1, '超时不重试（只启动一个子代理）')
+}
+{
+  const lifecycle = { disposed: 0, starts: 0, archived: [] }
+  const host = {
+    startActivation: async () => {
+      lifecycle.starts += 1
+      const childId = `child-ok-${lifecycle.starts}`
+      return {
+        childId,
+        result: Promise.resolve({ structured: validGroups }),
+        dispose: async () => { lifecycle.disposed += 1 },
+      }
+    },
+    getProvider: () => ({ name: 'spawn' }),
+  }
+  const ctx = {
+    get(name) {
+      if (name === 'subagents') return host
+      if (name === 'workspaceRegistry') {
+        return { archiveSession: async (childId, options) => { lifecycle.archived.push({ childId, options }) } }
+      }
+      return undefined
+    },
+  }
+  const successStats = { runs: 0, cacheHits: 0, failures: 0, retries: 0, deduped: 0, staleUses: 0, incrementalRuns: 0, lastError: null, lastOkAt: null }
+  const successGrouper = createAgentGrouper(ctx, {}, undefined, successStats)
+  const success = await successGrouper.generate({ agent: fakeAgent, tools: agentTools })
+  check(success.groups?.length === 6 && lifecycle.disposed === 1, '成功生成后 dispose 一次')
+  check(lifecycle.archived.length === 1 && lifecycle.archived[0].childId === 'child-ok-1', '成功后也归档子会话（不残留在会话列表）')
+  check(successStats.sessionsArchived === 1 && successStats.sessionArchiveFailures === 0, '归档计数进 stats.sessionsArchived')
+}
+{
+  const lifecycle = { starts: 0, archived: [] }
+  const host = {
+    startActivation: async () => {
+      lifecycle.starts += 1
+      const childId = `child-fail-${lifecycle.starts}`
+      return {
+        childId,
+        result: Promise.resolve({ structured: { groups: [] } }),
+        dispose: async () => {},
+      }
+    },
+    getProvider: () => ({ name: 'spawn' }),
+  }
+  const ctx = {
+    get(name) {
+      if (name === 'subagents') return host
+      if (name === 'workspaceRegistry') {
+        return { archiveSession: async (childId) => { lifecycle.archived.push(childId) } }
+      }
+      return undefined
+    },
+  }
+  const failStats = { runs: 0, cacheHits: 0, failures: 0, retries: 0, deduped: 0, staleUses: 0, incrementalRuns: 0, lastError: null, lastOkAt: null }
+  const failingGrouper = createAgentGrouper(ctx, {}, undefined, failStats)
+  const failed = await failingGrouper.generate({ agent: fakeAgent, tools: agentTools })
+  check(failed.error?.code === 'TOO_FEW_GROUPS' && lifecycle.starts === 2, '校验失败重试一次（共两次 attempt）')
+  check(lifecycle.archived.join(',') === 'child-fail-1,child-fail-2', '每次 attempt 的子会话都归档（重试也不泄漏）')
+}
+
+
+{
+  // 启动阶段就卡住（宿主迟迟不返回 activation）：超时必须返回，且迟到 activation 也要被取消/归档。
+  const state = { disposed: false, archived: [] }
+  let releaseLate
+  const host = {
+    startActivation: () => new Promise((resolve) => { releaseLate = resolve }),
+    getProvider: () => ({ name: 'spawn' }),
+  }
+  const ctx = {
+    get(name) {
+      if (name === 'subagents') return host
+      if (name === 'workspaceRegistry') {
+        return { archiveSession: async (childId) => { state.archived.push(childId) } }
+      }
+      return undefined
+    },
+  }
+  const lateStats = { runs: 0, cacheHits: 0, failures: 0, retries: 0, deduped: 0, staleUses: 0, incrementalRuns: 0, lastError: null, lastOkAt: null }
+  const lateGrouper = createAgentGrouper(ctx, { catalogTimeoutMs: 40 }, undefined, lateStats)
+  const startedAt = Date.now()
+  const out = await lateGrouper.generate({ agent: fakeAgent, tools: agentTools })
+  check(out.error?.code === 'TIMEOUT' && Date.now() - startedAt < 1500, '启动阶段超时也按 TIMEOUT 返回（不悬挂）')
+  const result = Promise.withResolvers()
+  releaseLate({
+    childId: 'child-late-1',
+    result: result.promise,
+    dispose: async () => {
+      state.disposed = true
+      result.resolve({ output: [], stopReason: 'aborted' })
+    },
+  })
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  check(state.disposed === true, '超时后才发布的迟到 activation 也会被 dispose')
+  check(state.archived.join(',') === 'child-late-1', '迟到 activation 的子会话也会被归档（不泄漏）')
+}
+
+console.log('== 全局生成队列：同 fingerprint 单飞 / 全局限流 / 预热节流 ==')
+{
+  const queue = createGenerationQueue({ maxConcurrent: 1, maxPending: 1 })
+  const gate = Promise.withResolvers()
+  let calls = 0
+  const first = queue.request('fp-same', async () => {
+    calls += 1
+    return gate.promise
+  })
+  const second = queue.request('fp-same', async () => {
+    calls += 1
+    return 'second-run'
+  })
+  gate.resolve('generated-once')
+  check(await first === 'generated-once' && await second === 'generated-once', '同一 fingerprint 的两个请求共享一次生成结果')
+  check(calls === 1 && queue.status().joined === 1, '同一 fingerprint 只启动一次子代理（不再每 session 一份）')
+}
+{
+  const queue = createGenerationQueue({ maxConcurrent: 1 })
+  const order = []
+  const gate = Promise.withResolvers()
+  const first = queue.request('fp-a', async () => {
+    order.push('start-a')
+    const value = await gate.promise
+    order.push('end-a')
+    return value
+  })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  const second = queue.request('fp-b', async () => {
+    order.push('start-b')
+    return 'b'
+  })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  check(order.join(',') === 'start-a', '不同 fingerprint 在第一个结束前不启动（全局 maxConcurrent=1）')
+  gate.resolve('a')
+  check(await first === 'a' && await second === 'b', '排队请求依次完成')
+  check(order.join(',') === 'start-a,end-a,start-b', '全局串行执行生成')
+}
+{
+  const queue = createGenerationQueue({ maxConcurrent: 1 })
+  const gate = Promise.withResolvers()
+  const active = queue.request('fp-x', async () => gate.promise)
+  let prewarmRan = false
+  const skipped = await queue.request('fp-y', async () => { prewarmRan = true }, { prewarm: true })
+  check(skipped === SKIP_GENERATION && prewarmRan === false, '预热在全局忙时直接 SKIP（不再每个新会话各起一批）')
+  gate.resolve('x')
+  await active
+  const idlePrewarm = await queue.request('fp-z', async () => 'prewarmed', { prewarm: true })
+  check(idlePrewarm === 'prewarmed', '空闲时的预热仍正常启动（保留原设计）')
+}
+{
+  const queue = createGenerationQueue({ maxConcurrent: 1, maxPending: 1 })
+  const gate = Promise.withResolvers()
+  const running = queue.request('fp-old', async () => {
+    await gate.promise
+    return 'old'
+  })
+  const stale = queue.request('fp-stale', async () => 'stale')
+  const newest = queue.request('fp-new', async () => 'new')
+  check(await stale === SKIP_GENERATION, 'pending 溢出时淘汰最旧请求（最新工具集优先）')
+  gate.resolve('old')
+  check(await running === 'old' && await newest === 'new', '活动与最新 pending 都完成')
+  check(queue.status().skipped >= 1, '队列 skipped 计数可观测')
 }
 
 console.log(`\n${passed}/${passed + failed} 通过`)

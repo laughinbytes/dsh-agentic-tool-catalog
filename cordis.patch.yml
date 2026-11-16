@@ -27,3 +27,9 @@
         # 生产：唯一策略 = 真 agent 自动分组（目录变化时后台生成一次、按目录指纹缓存、
         # 跨重启磁盘缓存、last-known-good 降级、无外部模型依赖；旧策略已全部移除）。
         # 详见 notes/2026-11-10-agent-strategy-production.md；benchmark 见 benchmark/discovery/。
+        #
+        # 生成生命周期（0.3.6 起默认就安全，一般不用配）：
+        # catalogTimeoutMs: 120000            # 到点取消子代理并等它结束，不再只 abort
+        # catalogMaxConcurrentGenerations: 1  # 进程级并发生成上限（跨 session 限流）
+        # catalogCacheMaxEntries: 64          # 官方 Storage 目录指纹上限（按时间淘汰）
+        # catalogArchiveChildSessions: true   # 每次尝试结束后归档生成子会话

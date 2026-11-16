@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.3.6 — 2026-11-16
+
+Fix: catalog generation could leave real sub-agent sessions running past the timeout and accumulate
+them forever. First reported from a dsh-dev session (919 leaked `origin=subagent` sessions; one
+generation ran 4.5 min with `catalogTimeoutMs=120000`), then reproduced locally before the fix.
+
+- **Timeout now cancels the child.** `startActivation()`'s `signal` is documented as pre-publication
+  cancellation only ("callers own later cancellation through dispose"): aborting it after the
+  activation is published does not stop the child turn. The old code did `abort()` +
+  `await activation.result`, so a timed-out generation kept running to natural completion (4.5 min
+  observed) and disposed only afterwards. `generate()` now races start/result against a real
+  deadline; on timeout it calls `subagents.interrupt(childId, { kind: 'ancestor', agent })`, then
+  awaits `activation.dispose()` (cancel → whenIdle → flush → release) under a bounded teardown grace
+  (`GENERATION_TEARDOWN_GRACE_MS`, 15 s) and returns `TIMEOUT`. No retry on timeout.
+- **Child sessions are archived after every attempt.** A `spawn` activation creates a durable
+  `origin=subagent` session; the plugin never cleaned them up. Each attempt (success, validation
+  retry, timeout) now retires its child through the official Workspace lifecycle:
+  `workspaceRegistry.archiveSession(childId, { stopActivity: true })` — hidden from session lists,
+  residual work stopped. Config: `catalogArchiveChildSessions` (default `true`; turn off for debugging).
+- **Process-wide generation limiter.** Old single-flight was per fingerprint only, so a rapidly
+  changing tool set (or several sessions/presets) started one real sub-agent per fingerprint —
+  7 concurrent catalog children were observed. A process-level queue now enforces
+  `catalogMaxConcurrentGenerations` (default 1, clamped to 1..4), merges same-fingerprint requests
+  across sessions, keeps at most one pending request (newest wins; stale pending resolves as
+  skipped), and makes pre-warm best-effort: it runs only while the queue is idle; otherwise the
+  restored session's first prompt/search triggers an on-demand run. Queue state is exposed in
+  `catalog_status.generation.queue`.
+- **Exponential failure backoff.** A failed generation left the session in `needsEnrichment`, so
+  every later prompt or scheduled message retried after the fixed 10-minute backoff indefinitely.
+  Backoff now doubles per consecutive failure (10 min → 20 min → … capped at 6 h) and resets on
+  success.
+- **Incremental prompt hardening.** Incremental generation now prefers the grouping cached for the
+  *same* fingerprint instead of another catalog's `lastGood`, and both prompts state that this is a
+  pure classification task (no tool calls / workspace inspection; return unchanged when nothing is
+  new). Observed children spent minutes inspecting the live catalog and storage before timing out.
+- **Cache eviction.** `tables.catalogs` had no cap (226+ fingerprints and growing). It now keeps at
+  most `catalogCacheMaxEntries` (default 64), evicting the oldest `createdAt` from memory and
+  official Storage; hydration prunes too. `storage` status reports `entries` / `maxEntries` / `evicted`.
+- **Observation.** `generation` status adds `timeouts`, `sessionsArchived`,
+  `sessionArchiveFailures`, `generationSkipped` and the queue snapshot; `storage` adds the counters above.
+- **Tests.** Unit suite 103/103 (was 77/77): timeout cancellation / no residual child, late-activation
+  cleanup after a startup timeout, child archive on success/failure/timeout, same-fingerprint dedupe,
+  global serialization, pre-warm skip. Real `dsh-tools` / `schemastery` / `storage-domain` schema suite
+  43/43 (was 29/29): cache eviction and the new Config defaults. Real activation matrix 33/33 (was
+  29/29): every supported host now also asserts it exposes `interrupt()`, the timeout-cancel channel
+  this fix depends on. Compliance A=0 B=0 (the known C=1 client portal finding is unchanged);
+  `npm run test:presentation` passes.
+- **Scope.** Only this repository changed; `dsh-dev`, the daily profile and `~/.dsh` were not
+  modified and no GitHub issue was filed. Sessions leaked by 0.3.5 or earlier are not deleted
+  automatically — archive them once manually if you want a clean list; 0.3.6 prevents new leaks.
+
 ## 0.3.5 — 2026-11-15
 
 Verification only: cover DSH 0.2.2-rc.3 in the real-host activation matrix. No runtime behavior change.

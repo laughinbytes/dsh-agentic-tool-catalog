@@ -137,6 +137,9 @@ for (const host of HOSTS) {
   const dir = ensureHost(host)
   const module = await import(pathToFileURL(join(dir, 'node_modules', '@deepseek-ai', 'dsh-subagent', 'lib', 'index.js')).href)
   check(typeof module.SubagentRuntime === 'function', `${host.version} 导出真实 SubagentRuntime`)
+  // 0.3.6 的超时修复依赖 interrupt(childId, { kind: 'ancestor', agent }) 与 activation.dispose()：
+  // 这里把“宿主确实提供该取消通道”也纳入兼容矩阵（任一支持版本缺失就阻断发布）。
+  check(typeof module.SubagentRuntime.prototype.interrupt === 'function', `${host.version} 暴露 interrupt()（超时取消通道）`)
   runtimes.set(host.key, { version: host.version, shape: host.shape, Runtime: module.SubagentRuntime })
 }
 

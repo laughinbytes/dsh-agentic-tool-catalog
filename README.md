@@ -24,10 +24,11 @@ by `search_tools` when a task actually needs them.
 - **Zero cooperation from other plugins**: no declarations, no metadata, no code changes. Any installed tool
   is discovered automatically.
 - **Local-first**: the generator runs on your DSH model; no external service is required.
-- **Reliable by design**: strict validation, one retry with feedback, single-flight generation, persistent
-  cache (official `ctx.storageDomain`), incremental regeneration on catalog changes, and a visible
-  "stale / refreshing" state if generation cannot complete. It always keeps working with the last successful
-  catalog or a flat bootstrap directory — and never silently hides the failure.
+- **Reliable by design**: strict validation, one retry with feedback, app-wide single-flight generation
+  (one real generator at a time, pre-warm included), timeout cancellation with archived child sessions,
+  persistent cache (official `ctx.storageDomain`), incremental regeneration on catalog changes, and a
+  visible "stale / refreshing" state if generation cannot complete. It always keeps working with the last
+  successful catalog or a flat bootstrap directory — and never silently hides the failure.
 - **Observable**: `catalog_status` exposes catalog freshness/origin, groups, loaded tools, generation and
   storage health.
 
@@ -44,11 +45,20 @@ agent needs tools
           (status = stale, explicit warning + backoff retry) or flat bootstrap directory
 ```
 
-- **New sessions** start generation immediately (pre-warm); **restored sessions** generate on their first
-  user message/search; **catalog changes** regenerate immediately (incremental first).
+- **New sessions** try generation immediately (pre-warm) while the global generator is idle; **restored
+  sessions** generate on their first user message/search; **catalog changes** regenerate immediately
+  (incremental first).
+- **One generator at a time**: at most `catalogMaxConcurrentGenerations` (default 1) real sub-agent runs
+  exist app-wide. Requests for the same tool fingerprint are merged across sessions, pre-warm is skipped
+  while another run is active, and a failed catalog backs off exponentially (10 min → 6 h) instead of
+  retrying on every prompt.
+- **No leaked generations**: the timeout is enforced by cancelling the child, and each attempt's
+  `origin=subagent` session is archived afterwards — hidden from every session list, with residual work
+  stopped. Controlled by `catalogArchiveChildSessions` (default `true`).
 - **Generation is keyed by the tool set, not by time**: one generation per unique tool fingerprint; the result is
   cached in official Storage and reused across sessions/restarts. There is no periodic refresh — the timestamp
   only moves when the tool set actually changes (install/remove a plugin or MCP server, preset change, etc.).
+  The catalog table keeps at most `catalogCacheMaxEntries` (default 64) fingerprints and evicts the oldest.
 - Tools are hidden from the model with `agent.ctx.tools.restrict({ deny })`; `search_tools` releases them
   through DSH's native mid-conversation tool-addition path.
 - The catalog cache lives in official DSH Storage (`ctx.storageDomain`, domain `agentic_tool_catalog`).
@@ -60,7 +70,7 @@ agent needs tools
 | Tool | Parameters | Behavior |
 |---|---|---|
 | `search_tools` | `query: string`, `limit?: number` | Search the catalog by intent/keywords (name, description, group id/description). Exact group-name queries load the whole group (up to `groupMaxResults`). Loaded tools become callable for the rest of the session (directly, or as `tools.<name>` inside `run_code`). |
-| `catalog_status` | — | Read-only JSON: `catalog` (source/freshness/origin/total/groups/others), `session` (loaded/pending/restriction), `generation` (runs, cache hits, failures, retries, dedupe, stale uses, incremental runs, last error/ok, instance), `storage` (mode/state), `warnings`. |
+| `catalog_status` | — | Read-only JSON: `catalog` (source/freshness/origin/total/groups/others), `session` (loaded/pending/restriction), `generation` (runs, cache hits, failures, timeouts, retries, dedupe, stale uses, incremental runs, archived child sessions, queue active/pending/joined/skipped, last error/ok, instance), `storage` (mode/entries/maxEntries/evicted), `warnings`. |
 
 A short `catalog:note` system-prompt section lists deferred groups and counts; during bootstrap/stale states it
 adds one explicit line explaining that the catalog is initializing/refreshing.
@@ -78,7 +88,10 @@ adds one explicit line explaining that the catalog is initializing/refreshing.
     extraKeepResident: []    # append globs that must always stay visible
     extraDeferred: []        # force globs to stay deferred
     catalogProvider: spawn   # DSH subagent provider used for generation
-    catalogTimeoutMs: 120000 # per-generation timeout
+    catalogTimeoutMs: 120000 # per-generation timeout (cancelled, not just aborted, when it fires)
+    catalogMaxConcurrentGenerations: 1 # app-wide concurrent generator limit (clamped to 1..4)
+    catalogCacheMaxEntries: 64 # max cached tool fingerprints in official Storage
+    catalogArchiveChildSessions: true # archive each generation child session after its attempt
     catalogResetNonce: ''    # cache namespace; change it to force regeneration
 ```
 
@@ -166,6 +179,9 @@ plugin page / release data card (compare **with vs without** the plugin on the s
   user data and is not migrated between storage backends.
 - Cold start: the very first run has no catalog yet and starts with a flat bootstrap directory while the agent
   generates one in the background. Subsequent runs, restarts and catalog changes use the persisted/incremental path.
+- Generation child sessions are archived, not deleted: like any archived DSH session their log stays on disk
+  but is hidden from session lists. Sessions leaked by plugin versions before 0.3.6 are not removed
+  automatically — archive them once if you want a clean list.
 - Generation quality depends on the configured model; the plugin validates strictly and retries/falls back
   with a visible status, but it cannot make a bad grouping "correct" silently.
 - No UI dashboard yet (`catalog_status` is the observable interface); tools only (skills are not part of the
