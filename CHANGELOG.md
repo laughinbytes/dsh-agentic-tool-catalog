@@ -13,12 +13,17 @@ generation ran 4.5 min with `catalogTimeoutMs=120000`), then reproduced locally 
   observed) and disposed only afterwards. `generate()` now races start/result against a real
   deadline; on timeout it calls `subagents.interrupt(childId, { kind: 'ancestor', agent })`, then
   awaits `activation.dispose()` (cancel → whenIdle → flush → release) under a bounded teardown grace
-  (`GENERATION_TEARDOWN_GRACE_MS`, 15 s) and returns `TIMEOUT`. No retry on timeout.
+  (`GENERATION_TEARDOWN_GRACE_MS`, 15 s) and returns `TIMEOUT`. No retry on timeout. An activation
+  published after the deadline (including one microtask after the abort) is still released and
+  archived — the teardown hook does not depend on the start promise's settle flag.
 - **Child sessions are archived after every attempt.** A `spawn` activation creates a durable
   `origin=subagent` session; the plugin never cleaned them up. Each attempt (success, validation
   retry, timeout) now retires its child through the official Workspace lifecycle:
   `workspaceRegistry.archiveSession(childId, { stopActivity: true })` — hidden from session lists,
   residual work stopped. Config: `catalogArchiveChildSessions` (default `true`; turn off for debugging).
+  The archive wait is bounded (`GENERATION_ARCHIVE_TIMEOUT_MS`, at most 5 s): a stuck workspace
+  write/stop provider can never hold the process-wide generation slot forever; archive continues in
+  the background and is counted when it lands.
 - **Process-wide generation limiter.** Old single-flight was per fingerprint only, so a rapidly
   changing tool set (or several sessions/presets) started one real sub-agent per fingerprint —
   7 concurrent catalog children were observed. A process-level queue now enforces
@@ -40,8 +45,9 @@ generation ran 4.5 min with `catalogTimeoutMs=120000`), then reproduced locally 
   official Storage; hydration prunes too. `storage` status reports `entries` / `maxEntries` / `evicted`.
 - **Observation.** `generation` status adds `timeouts`, `sessionsArchived`,
   `sessionArchiveFailures`, `generationSkipped` and the queue snapshot; `storage` adds the counters above.
-- **Tests.** Unit suite 103/103 (was 77/77): timeout cancellation / no residual child, late-activation
-  cleanup after a startup timeout, child archive on success/failure/timeout, same-fingerprint dedupe,
+- **Tests.** Unit suite 107/107 (was 77/77): timeout cancellation / no residual child, late-activation
+  cleanup after a startup timeout (including the abort→microtask publish window), bounded archive when
+  `archiveSession` never settles, child archive on success/failure/timeout, same-fingerprint dedupe,
   global serialization, pre-warm skip. Real `dsh-tools` / `schemastery` / `storage-domain` schema suite
   43/43 (was 29/29): cache eviction and the new Config defaults. Real activation matrix 33/33 (was
   29/29): every supported host now also asserts it exposes `interrupt()`, the timeout-cancel channel

@@ -32,6 +32,9 @@ lists). The unit suite pins the host semantics we must honor, using a fake subag
   does not settle `result` (the real host documents it as pre-publication cancellation only); on
   timeout `generate()` must call `subagents.interrupt(childId, { kind: 'ancestor', agent })`, await
   `dispose()`, and return `TIMEOUT` within the teardown budget — not wait for natural completion.
+  A late activation published after the deadline (even one microtask after the abort) is still
+  released and archived; the archive wait itself is bounded so a stuck workspace write cannot hold
+  the process-wide generation slot.
 - **Retirement** (`lib/session-retire.js`): every attempt (success, validation-failure retry, timeout)
   archives its child via `workspaceRegistry.archiveSession(childId, { stopActivity: true })`.
 - **Scheduling** (`lib/generation-queue.js`): same fingerprint merges across sessions, global

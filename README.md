@@ -48,8 +48,9 @@ agent needs tools
 - **New sessions** try generation immediately (pre-warm) while the global generator is idle; **restored
   sessions** generate on their first user message/search; **catalog changes** regenerate immediately
   (incremental first).
-- **One generator at a time**: at most `catalogMaxConcurrentGenerations` (default 1) real sub-agent runs
-  exist app-wide. Requests for the same tool fingerprint are merged across sessions, pre-warm is skipped
+- **One generator at a time by default**: at most `catalogMaxConcurrentGenerations` (default 1,
+  configurable 1..4) real sub-agent runs exist app-wide. Requests for the same tool fingerprint are
+  merged across sessions, pre-warm is skipped
   while another run is active, and a failed catalog backs off exponentially (10 min → 6 h) instead of
   retrying on every prompt.
 - **No leaked generations**: the timeout is enforced by cancelling the child, and each attempt's

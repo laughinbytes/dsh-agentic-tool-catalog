@@ -402,6 +402,61 @@ console.log('== 生成生命周期：超时真正取消子代理 + 子会话归�
   check(state.archived.join(',') === 'child-late-1', '迟到 activation 的子会话也会被归档（不泄漏）')
 }
 
+
+{
+  // 审查回归：abort 后“一个 microtask 才 resolve activation”的窗口。若用 start promise
+  // 是否 settle 判断是否挂迟到收尾，就会在此窗口漏掉 dispose/归档（修复前实测 leaked）。
+  const state = { disposed: 0, archived: [] }
+  const host = {
+    startActivation: (spec) => new Promise((resolve) => {
+      spec.signal.addEventListener('abort', () => {
+        queueMicrotask(() => resolve({
+          childId: 'child-micro-1',
+          result: new Promise(() => {}),
+          dispose: async () => { state.disposed += 1 },
+        }))
+      })
+    }),
+    getProvider: () => ({ name: 'spawn' }),
+  }
+  const ctx = {
+    get(name) {
+      if (name === 'subagents') return host
+      if (name === 'workspaceRegistry') {
+        return { archiveSession: async (childId) => { state.archived.push(childId) } }
+      }
+      return undefined
+    },
+  }
+  const microStats = { runs: 0, cacheHits: 0, failures: 0, retries: 0, deduped: 0, staleUses: 0, incrementalRuns: 0, lastError: null, lastOkAt: null }
+  const microGrouper = createAgentGrouper(ctx, { catalogTimeoutMs: 40 }, undefined, microStats)
+  const out = await microGrouper.generate({ agent: fakeAgent, tools: agentTools })
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  check(out.error?.code === 'TIMEOUT', 'abort 后 microtask 才发布 activation：仍按 TIMEOUT 返回')
+  check(state.disposed === 1 && state.archived.join(',') === 'child-micro-1', 'microtask 迟到 activation 也被 dispose + 归档（审查 BUG-1 回归）')
+}
+{
+  // 审查回归：archiveSession 永不 settle 时不能永久占住 generate（全局队列槽位只有 1 个）。
+  const host = {
+    startActivation: async () => ({ childId: 'child-ok', result: Promise.resolve({ structured: validGroups }), dispose: async () => {} }),
+    getProvider: () => ({ name: 'spawn' }),
+  }
+  const ctx = {
+    get(name) {
+      if (name === 'subagents') return host
+      if (name === 'workspaceRegistry') return { archiveSession: () => new Promise(() => {}) }
+      return undefined
+    },
+  }
+  const stuckStats = { runs: 0, cacheHits: 0, failures: 0, retries: 0, deduped: 0, staleUses: 0, incrementalRuns: 0, lastError: null, lastOkAt: null }
+  const stuckGrouper = createAgentGrouper(ctx, { catalogTimeoutMs: 40 }, undefined, stuckStats)
+  const startedAt = Date.now()
+  const out = await stuckGrouper.generate({ agent: fakeAgent, tools: agentTools })
+  const elapsed = Date.now() - startedAt
+  check(out.groups?.length === 6, '归档卡住不影响生成结果')
+  check(elapsed < 1500, `归档卡住时 generate 仍在收尾预算内返回（${elapsed}ms，审查 BUG-2 回归）`)
+}
+
 console.log('== 全局生成队列：同 fingerprint 单飞 / 全局限流 / 预热节流 ==')
 {
   const queue = createGenerationQueue({ maxConcurrent: 1, maxPending: 1 })
