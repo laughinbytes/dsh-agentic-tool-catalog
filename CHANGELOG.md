@@ -45,8 +45,10 @@ wait for the tool list to settle before computing anything.
   gets its cached same-fingerprint catalog applied after the window settles (the deferred-enrichment
   resume path — verified by disabling that call and watching the assertion fail). Activation matrix 33/33
   and compliance A=0 B=0 unchanged; `npm run test:presentation` passes.
-- **Scope / release state.** Committed locally only; **not published** (npm `latest`/`next` remain
-  0.3.6), no tag, no GitHub Release, no profile install — awaiting review.
+- **Scope / release state.** Released 2026-11-24: npm `0.3.9` is `latest` and `next`
+  (tarball sha1 `695dd68851bfb172bd948f957bb653b7664d0746`, 27 files), git tag `v0.3.9` pushed,
+  GitHub Release created. Only this repository changed; the daily Desktop profile was **not**
+  upgraded (kept as a review decision).
 
 ## 0.3.8 — 2026-11-24
 

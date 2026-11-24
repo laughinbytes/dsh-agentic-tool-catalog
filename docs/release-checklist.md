@@ -13,6 +13,34 @@
       `generation.paused` is absent on a healthy host.
 - [ ] `npm run test:presentation` passes; `npm pack --dry-run` contains `lib/subagent-compat.js`.
 
+## 0.3.9 — 2026-11-24 (published 2026-11-24)
+
+Three fixes in one release: pure catalog removals no longer start a generation (0.3.7), description-only
+changes refresh the catalog text silently (0.3.8), and `tools/change` is debounced by a stabilization
+window so bridge-MCP reconnect churn is never computed on a mid-jitter snapshot (0.3.9). Full detail in
+`CHANGELOG.md`.
+
+- [x] `npm test`: unit 178/178, real `dsh-tools` / `schemastery` / `storage-domain` schema 89/89, real
+      activation matrix 33/33, plugin compliance `--strict` A=0 B=0 C=1 (the C item is the known client
+      portal R-UI-04).
+- [x] `npm run test:presentation` passed.
+- [x] `npm pack --dry-run`: version `0.3.9`, 27 files, 394.2 kB packed / 549.0 kB unpacked; includes the
+      new `lib/change-buffer.js`; dev-only `scripts/` are not in the tarball.
+- [x] Local git tag `v0.3.9` on `eed35aa`; main and tag pushed.
+- [x] `npm publish --access public --tag next` (registry accepted with HTTP 202 and a "being processed"
+      notice; the version became visible after ~90 s), then
+      `npm dist-tag add dsh-agentic-tool-catalog@0.3.9 latest`. Registry tarball sha1
+      `695dd68851bfb172bd948f957bb653b7664d0746`, 27 files (downloaded and verified); `latest` and
+      `next` are both 0.3.9.
+      https://www.npmjs.com/package/dsh-agentic-tool-catalog/v/0.3.9
+- [x] 2FA note: the account is auth-and-writes; the CLI was run under a pty so npm's browser web-auth
+      prompt could complete (`npm login --auth-type=web` itself is rejected by the registry in this
+      non-interactive setup; the publish-time web-auth flow worked).
+- [x] GitHub Release: https://github.com/laughinbytes/dsh-agentic-tool-catalog/releases/tag/v0.3.9
+      (created from the existing tag and marked Latest).
+- [ ] Daily Desktop profile upgrade: **not performed** — this release deliberately stopped at the
+      registry/GitHub boundary for review (no profile install, no hot swap).
+
 ## 0.3.6 — 2026-11-16 (published 2026-11-16)
 
 Fix: catalog generation could leave real sub-agent sessions running past the timeout and accumulate
