@@ -29,6 +29,11 @@ by `search_tools` when a task actually needs them.
   persistent cache (official `ctx.storageDomain`), incremental regeneration on catalog changes, and a
   visible "stale / refreshing" state if generation cannot complete. It always keeps working with the last
   successful catalog or a flat bootstrap directory — and never silently hides the failure.
+- **No wasted generations on removals**: a change that only *removes* tools (or changes nothing) is applied
+  locally by filtering the last successful grouping in-process — no model call, no child session. Only a
+  genuinely new tool starts a generation. Observability: `generation.removalOnlySkips` and a
+  `catalog-removal-only` warning naming the removed tools.
+
 - **Observable**: `catalog_status` exposes catalog freshness/origin, groups, loaded tools, generation and
   storage health.
 
@@ -46,8 +51,9 @@ agent needs tools
 ```
 
 - **New sessions** try generation immediately (pre-warm) while the global generator is idle; **restored
-  sessions** generate on their first user message/search; **catalog changes** regenerate immediately
-  (incremental first).
+  sessions** generate on their first user message/search; **catalog additions** regenerate immediately
+  (incremental first). A change that only removes tools is applied locally: the last successful grouping is
+  filtered against the current tool list, empty groups are dropped, and no generation runs.
 - **One generator at a time by default**: at most `catalogMaxConcurrentGenerations` (default 1,
   configurable 1..4) real sub-agent runs exist app-wide. Requests for the same tool fingerprint are
   merged across sessions, pre-warm is skipped
@@ -71,7 +77,7 @@ agent needs tools
 | Tool | Parameters | Behavior |
 |---|---|---|
 | `search_tools` | `query: string`, `limit?: number` | Search the catalog by intent/keywords (name, description, group id/description). Exact group-name queries load the whole group (up to `groupMaxResults`). Loaded tools become callable for the rest of the session (directly, or as `tools.<name>` inside `run_code`). |
-| `catalog_status` | — | Read-only JSON: `catalog` (source/freshness/origin/total/groups/others), `session` (loaded/pending/restriction), `generation` (runs, cache hits, failures, timeouts, retries, dedupe, stale uses, incremental runs, archived child sessions, queue active/pending/joined/skipped, last error/ok, instance), `storage` (mode/entries/maxEntries/evicted), `warnings`. |
+| `catalog_status` | — | Read-only JSON: `catalog` (source/freshness/origin/total/groups/others), `session` (loaded/pending/restriction), `generation` (runs, cache hits, failures, timeouts, retries, dedupe, stale uses, incremental runs, removal-only skips, pruned loaded tools, archived child sessions, queue active/pending/joined/skipped, last error/ok, instance), `storage` (mode/entries/maxEntries/evicted), `warnings`. |
 
 A short `catalog:note` system-prompt section lists deferred groups and counts; during bootstrap/stale states it
 adds one explicit line explaining that the catalog is initializing/refreshing.

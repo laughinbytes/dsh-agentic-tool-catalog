@@ -166,6 +166,163 @@ if (statusTool) {
 }
 check(typeof disposer === 'function', '插件实例 effect 返回 disposer')
 
+console.log('== 目录变化：纯删除不启动第二个生成（真实 apply + 假宿主）==')
+{
+  // 用真实 dsh-tools 编译过的 apply() 跑完整 rebuild 路径：首次生成 → 上游移除一个工具 →
+  // tools/change 触发 rebuild。纯删除必须走本地适配：
+  //   不启动第二个子代理 / 删空的组消失 / loaded 残影被清理 / lastOkAt 不刷新 /
+  //   removalOnlySkips 与 catalog-removal-only 告警可观测；
+  // 之后再新增一个工具，生成必须重新启动（added 非空）。
+  // 这是一个空转子代理 bug（2026-11-23：16 次纯删除 = 16 次空跑）的端到端回归。
+  const SHARED_KEY = Symbol.for('@local/dsh-agentic-tool-catalog/shared-v1')
+  const REGISTRY_KEY = Symbol.for('@local/dsh-agentic-tool-catalog/restrictions')
+  delete globalThis[SHARED_KEY]
+  delete globalThis[REGISTRY_KEY]
+
+  let toolDefs = [
+    ['mcp__workspace__calendar_list', 'List calendar events'],
+    ['mcp__workspace__gmail_send', 'Send a gmail message'],
+    ['mcp__workspace__gmail_list', 'List gmail messages'],
+    ['mcp__workspace__drive_list', 'List drive files'],
+    ['dsh_session_manage', 'Manage sessions'],
+    ['browser_open', 'Open a browser page'],
+    ['schedule_create', 'Create a schedule'],
+  ].map(([name, description]) => ({ name, description }))
+
+  // 6 组：前 6 个工具各成一组，多余工具并入第 2 组；calendar 是 capability-0 的唯一成员，
+  // 删除它之后该组必须整组消失（本地适配的“空组丢弃”）。
+  const groupsFor = (defs) => {
+    const names = defs.map((entry) => entry.name)
+    const buckets = Array.from({ length: 6 }, (_, index) => (index < names.length ? [names[index]] : []))
+    for (let index = 6; index < names.length; index += 1) buckets[1 + ((index - 6) % 5)].push(names[index])
+    return buckets.map((members, index) => ({ id: `capability-${index}`, description: `Capability group ${index}`, tools: members }))
+  }
+
+  let generationStarts = 0
+  const host = {
+    startActivation: async () => {
+      generationStarts += 1
+      return {
+        childId: `child-removal-${generationStarts}`,
+        result: Promise.resolve({ structured: { groups: groupsFor(toolDefs) } }),
+        dispose: async () => {},
+      }
+    },
+    getProvider: () => ({ name: 'spawn' }),
+  }
+
+  // 假 agent：scopeOf(agent.ctx) 读一个 symbol 属性，返回任意 tag 即可让 view/definitions 分支生效。
+  const restrictionLog = []
+  const agentCtx = new Proxy({
+    tools: {
+      restrict: ({ deny }) => {
+        restrictionLog.push([...deny])
+        return () => {}
+      },
+    },
+  }, {
+    get(target, property) {
+      if (typeof property === 'symbol') return 'fake-scope'
+      return target[property]
+    },
+  })
+  const agent = {
+    session: { header: { id: 'session-removal-test', origin: 'main', createdAt: Date.now() + 1000 } },
+    ctx: agentCtx,
+  }
+
+  const registrations = []
+  const handlers = new Map()
+  const removalCtx = {
+    tools: {
+      register(definition) { registrations.push(definition) },
+      view() { return { restrictableNames: new Set(toolDefs.map((entry) => entry.name)) } },
+      definitions() { return toolDefs },
+      schemas() { return toolDefs },
+    },
+    get(name) {
+      if (name === 'agents') return { list: () => [agent] }
+      if (name === 'subagents') return host
+      return undefined
+    },
+    on(event, listener) {
+      const list = handlers.get(event) ?? []
+      list.push(listener)
+      handlers.set(event, list)
+    },
+    effect(fn) {
+      const dispose = fn()
+      return typeof dispose === 'function' ? dispose : undefined
+    },
+    inject() {},
+    logger: { warn() {} },
+  }
+  plugin.apply(removalCtx, plugin.Config({ catalogTimeoutMs: 5000, catalogProvider: 'spawn' }))
+  const emit = (event) => {
+    for (const listener of handlers.get(event) ?? []) listener({ agent })
+  }
+  const removalStatus = registrations.find((definition) => definition.name === 'catalog_status')
+  const removalSearch = registrations.find((definition) => definition.name === 'search_tools')
+  const snapshot = async () => JSON.parse(await removalStatus.execute({}, { agent }))
+  const waitFor = async (predicate, label) => {
+    const deadline = Date.now() + 3000
+    while (Date.now() < deadline) {
+      if (await predicate()) return true
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+    throw new Error(`等待超时：${label}`)
+  }
+
+  await waitFor(async () => (await snapshot()).generation.lastOkAt !== null, '首次生成完成')
+  const generated = await snapshot()
+  eq(generated.catalog.source, 'agent', '初始：首次生成产出 agent 目录')
+  eq(generated.catalog.total, 7, '初始：目录 7 个按需工具')
+  eq(generationStarts, 1, '初始：启动一次生成子代理')
+
+  // 按公开路径加载一个工具（会把名字记进 state.loaded）。
+  await removalSearch.execute({ query: 'calendar list' }, { agent })
+  const loadedBefore = await snapshot()
+  check(loadedBefore.session.loaded.includes('mcp__workspace__calendar_list'), '加载：search_tools 把 calendar 工具记入 loaded')
+
+  // 模拟上游 token 刷新让 calendar 工具消失（只少不多）。
+  const beforeRemoval = await snapshot()
+  toolDefs = toolDefs.filter((entry) => entry.name !== 'mcp__workspace__calendar_list')
+  emit('tools/change')
+  const afterRemoval = await snapshot()
+  eq(generationStarts, 1, '纯删除：没有启动第二个生成子代理（真实 apply 路径）')
+  eq(afterRemoval.generation.runs, beforeRemoval.generation.runs, '纯删除：generation.runs 不增加')
+  eq(afterRemoval.generation.lastOkAt, beforeRemoval.generation.lastOkAt, '纯删除：lastOkAt 不被刷新（本次没有生成）')
+  eq(afterRemoval.generation.removalOnlySkips, 1, '纯删除：removalOnlySkips 计数')
+  eq(afterRemoval.catalog.source, 'agent-adapted', '纯删除：source=agent-adapted（不冒充生成结果）')
+  eq(afterRemoval.catalog.freshness, 'fresh', '纯删除：没有“刷新中/待刷新”状态（本来不需要生成）')
+  eq(afterRemoval.catalog.total, 6, '纯删除：目录条目数跟随工具表')
+  check(!afterRemoval.catalog.groups.some((group) => group.id === 'capability-0'), '纯删除：删空的组从目录消失')
+  eq(afterRemoval.catalog.groups.length, 5, '纯删除：其余 5 组保留')
+  check(!afterRemoval.session.loaded.includes('mcp__workspace__calendar_list'), '纯删除：loaded 里已移除的工具被清理')
+  eq(afterRemoval.generation.loadedPruned, 1, '纯删除：loadedPruned 计数（清理了 1 个已不存在的工具）')
+  check(afterRemoval.warnings.some((warning) => warning.kind === 'catalog-removal-only' && warning.message.includes('mcp__workspace__calendar_list')), '纯删除：catalog-removal-only 告警带工具名')
+  check(!afterRemoval.warnings.some((warning) => warning.kind === 'catalog-generated'), '纯删除：没有 catalog-generated 成功记录')
+  const lastDeny = restrictionLog.at(-1) ?? []
+  check(!lastDeny.includes('mcp__workspace__calendar_list'), '纯删除：restriction 的 deny 不残留已移除工具')
+  // 空闲会话的下一次 prompt 是现场触发点（agent/inbox/claimed → ensureEnrichment）：
+  // needsEnrichment 必须已是 false，不能把生成补起来（否则 50 分钟一次的 prompt 会继续空跑）。
+  emit('agent/inbox/claimed')
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  eq(generationStarts, 1, '纯删除后下一次 prompt 不会补起生成（needsEnrichment=false）')
+
+  // 之后再新增一个工具：added 非空，必须重新生成。
+  toolDefs = [...toolDefs, { name: 'mcp__workspace__tasks_list', description: 'List tasks' }]
+  emit('tools/change')
+  await waitFor(async () => (await snapshot()).generation.runs >= 2 && (await snapshot()).catalog.source === 'agent', '新增后的生成完成')
+  const afterAddition = await snapshot()
+  eq(generationStarts, 2, '新增：重新启动生成（added 非空）')
+  eq(afterAddition.catalog.source, 'agent', '新增：生成成功后 source=agent')
+  check(afterAddition.catalog.total === 7 && afterAddition.catalog.groups.length === 6, '新增：目录与分组覆盖新工具')
+
+  delete globalThis[SHARED_KEY]
+  delete globalThis[REGISTRY_KEY]
+}
+
 
 console.log('== 目录缓存淘汰（catalogs 条数上限）==')
 {

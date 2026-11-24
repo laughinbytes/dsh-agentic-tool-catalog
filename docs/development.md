@@ -42,6 +42,26 @@ lists). The unit suite pins the host semantics we must honor, using a fake subag
 - **Eviction** (`scripts/verify-agentic-tool-catalog-schema.mjs`): `tables.catalogs` keeps at most
   `catalogCacheMaxEntries` fingerprints in memory and official Storage, including after hydrate.
 
+## Change classification regression
+
+Generation is only allowed when a tool name was **added**; a change that only removes tools is applied
+locally from the last successful grouping (`lib/generation.js` → `resolveCatalogChange()` +
+`adaptAgentGroups()`). This is the 2026-11-23 fix: an idle session produced 16 `origin=subagent`
+generation children for pure removals (upstream MCP token refresh flips one tool's visibility), every
+prompt with `New tools = []`.
+
+- `scripts/verify-agentic-tool-catalog.mjs` pins the decision function: removal-only → `local`
+  (`needsGeneration=false`, empty group dropped, `catalog-removal-only` warning with the names,
+  `source=agent-adapted`, no `catalog-generated`), addition → `generate`, addition+removal → `generate`,
+  no history/empty history → `bootstrap`, failed generation → `fallback` with the stale warning, plus
+  `diffToolCatalog` and `pruneLoadedTools` (a removed tool cannot linger in `session.loaded`; the deny
+  list is derived from catalog entries, so no "deny a tool that no longer exists").
+- `scripts/verify-agentic-tool-catalog-schema.mjs` drives the real `apply()` with a fake agent/tool
+  service and a fake subagent host end to end: first generation, then a removal through `tools/change`
+  must **not** start a second child (and must keep `lastOkAt`), then an addition must generate again.
+  Both `rebuild()` and the failed-generation fallback call the same local-adapt implementation; do not
+  add a second copy.
+
 Keep these tests green when touching `lib/generation.js`, `lib/generation-queue.js`,
 `lib/session-retire.js`, `lib/store.js` or the enrichment code in `lib/index.js`.
 

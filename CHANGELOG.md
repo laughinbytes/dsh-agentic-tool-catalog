@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.3.7 — 2026-11-24
+
+Fix: catalog changes that only *removed* tools still spawned real `agentic-tool-catalog generation`
+sub-agents that were told to return the existing grouping unchanged. An idle session
+(`session-0c553b7d-a424-4e07-aa95-b6768d682f92`, 2026-11-23 18:00 → 11-24 10:40) produced 21
+`origin=subagent` children in 50-minute steps; 16 of them had `New tools = []` while the current tool
+count only decreased (80 → 65). The cause was our own trigger, not the upstream MCP: `rebuild()`
+compared only the name-set fingerprint and started a generation whenever it changed, without telling
+additions from removals.
+
+- **Removal-only changes are now applied locally.** `lib/generation.js` classifies the change
+  (`diffToolCatalog()`: `added` = current names − last grouped names, `removed` = the reverse) and
+  `resolveCatalogChange()` returns mode `local` when `added` is empty. `rebuild()` then filters the
+  last successful grouping through the same `adaptAgentGroups()` used for stale fallback (removed
+  members dropped, empty groups dropped, leftover ungrouped tools → `others`), still updates the
+  fingerprint, re-applies the restriction, publishes the snapshot — and does not call
+  `startEnrichment()`. `needsEnrichment` stays `false`, so the next prompt/search cannot restart it.
+- **Boundaries.** Any added tool (even together with removals) still generates; no previous grouping
+  (first run / failed fallback) still goes bootstrap + generation; an empty deferred set keeps the
+  existing empty-catalog branch; a forced rebuild with an unchanged set is also local.
+- **Observability, not fake success.** A skip is not recorded as `catalog-generated` and does not move
+  `generation.lastOkAt` or `lastGood`. `catalog.source` becomes `agent-adapted`,
+  `generation.removalOnlySkips` counts skips, and a `catalog-removal-only` warning names the removed
+  tools (an upstream tool disappearing is still visible instead of silently normalized). Tools that
+  vanish while in `session.loaded` are pruned (`generation.loadedPruned`); the restriction deny list is
+  derived from catalog entries, so a removed tool can never stay denied forever.
+- **One local-adapt implementation.** Both the new removal-only path and the existing failed-generation
+  fallback call `resolveCatalogChange()` → `adaptAgentGroups()` (the latter now takes
+  `{ source, warning }`); filtering/warning logic is not duplicated.
+- **Tests.** Unit suite 141/141 (was 107/107): removal-only decision (`needsGeneration=false`, empty
+  group dropped, warning + source, no `catalog-generated`), pure addition, addition+removal, no-history
+  bootstrap, failed-generation fallback, `diffToolCatalog`, `pruneLoadedTools`. Real-package suite
+  65/65 (was 43/43): drives the real `apply()` end to end with a fake tool service, fake agent and fake
+  subagent host — initial generation, then a `tools/change` removal must not start a second child, must
+  not move `lastOkAt`, must prune the removed tool from `session.loaded`, and must keep the next idle
+  prompt (`agent/inbox/claimed`) from restarting generation; then an addition must generate again. Activation matrix 33/33 and
+  compliance A=0 B=0 unchanged; `npm run test:presentation` passes.
+- **Deliberately not done: time-window coalescing.** Grouping several changes within ~5 minutes into
+  one generation was considered and left out: the generation queue already merges same-fingerprint
+  requests, caps app-wide concurrency and backs off failures, while a debounce timer would delay
+  legitimate new-tool grouping and add timer state the current design avoids. Pure removals were the
+  observed waste and are now free without a timer.
+- **Known trade-offs (unchanged).** The fingerprint still hashes tool **names** only, so a description
+  change with an unchanged name does not trigger regeneration. Removal-only adaptations are not
+  persisted as a new successful generation: the next session diffs against the untouched last-good
+  grouping and skips generation as well (one generation happens again only after a later addition
+  creates a new grouping).
+- **Scope.** Only this repository changed; no package was published, and the daily profile / other
+  repositories were not modified.
+
 ## 0.3.6 — 2026-11-16
 
 Fix: catalog generation could leave real sub-agent sessions running past the timeout and accumulate

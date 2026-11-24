@@ -13,6 +13,7 @@ import {
   mcpInfo,
   normalizeGroupId,
   noteText,
+  pruneLoadedTools,
   rankTools,
   residentMatcher,
   summarizeGroups,
@@ -24,6 +25,9 @@ import {
   buildAgentGroupPrompt,
   catalogFromAgentGroups,
   createAgentGrouper,
+  diffToolCatalog,
+  groupedToolNames,
+  resolveCatalogChange,
   validateAgentGroups,
 } from '../lib/generation.js'
 import {
@@ -199,6 +203,86 @@ const noService = createAgentGrouper({ get: () => undefined }, {})
 check(noService.enabled() === false, '子代理客户端：无服务时 disabled')
 check((await noService.generate({ agent: fakeAgent, tools: agentTools })).error?.code === 'NO_SUBAGENT_SERVICE', '子代理客户端：无服务返回错误')
 check(noService.stats.failures === 1 && noService.stats.lastError?.code === 'NO_SUBAGENT_SERVICE', '子代理客户端：provider 不可用也计入 failures/lastError（观测缺口已修）')
+
+console.log('== 目录变化判定：纯删除不触发重新分组 ==')
+{
+  // 2026-11-23 的现场：上游 MCP token 刷新让单个工具消失，旧实现只要 fingerprint 变了就起
+  // 真实子代理；prompt 里 New tools=[]，sub-agent 原样返回 —— 16 次纯删除 = 16 次空跑。
+  const history = [
+    tool('mcp__workspace__calendar_list'),
+    tool('mcp__workspace__gmail_send'),
+    tool('mcp__workspace__gmail_list'),
+    tool('dsh_session_manage'),
+    tool('browser_open'),
+    tool('schedule_create'),
+  ]
+  // 上次成功分组：calendar 组只有一个成员，删除后该组应整组消失。
+  const previousGroups = [
+    { id: 'workspace-calendar', description: 'Calendar tools', tools: ['mcp__workspace__calendar_list'] },
+    { id: 'workspace-gmail', description: 'Gmail tools', tools: ['mcp__workspace__gmail_send', 'mcp__workspace__gmail_list'] },
+    { id: 'session-admin', description: 'Session administration', members: ['dsh_session_manage'] },
+    { id: 'browser', description: 'Browser tools', tools: ['browser_open'] },
+    { id: 'schedule', description: 'Scheduled tasks', tools: ['schedule_create'] },
+  ]
+  const withoutCalendar = history.filter((entry) => entry.name !== 'mcp__workspace__calendar_list')
+  const removal = resolveCatalogChange(withoutCalendar, previousGroups)
+  check(removal.mode === 'local', `纯删除：判定为本地适配而非生成（实际 ${removal.mode}）`)
+  eq(removal.needsGeneration, false, '纯删除：不允许启动生成')
+  eq(removal.added.join(','), '', '纯删除：added 为空')
+  eq(removal.removed.join(','), 'mcp__workspace__calendar_list', '纯删除：removed 含被移除工具')
+  eq(removal.catalog.groups.map((group) => group.id).sort().join(','), 'browser,schedule,session-admin,workspace-gmail', '纯删除：删空的组被丢弃，其余组保留')
+  check(removal.catalog.entries.every((entry) => entry.name !== 'mcp__workspace__calendar_list'), '纯删除：目录里不再有被移除工具')
+  eq(removal.catalog.others.length, 0, '纯删除：没有工具落 others（全部仍在旧组里）')
+  eq(removal.catalog.source, 'agent-adapted', '纯删除：source=agent-adapted（不冒充生成结果）')
+  check(
+    removal.catalog.warnings.some((warning) => warning.kind === 'catalog-removal-only' && warning.message.includes('mcp__workspace__calendar_list')),
+    '纯删除：warning 记录被移除的工具名（可观测）',
+  )
+  check(!removal.catalog.warnings.some((warning) => warning.kind === 'catalog-generated'), '纯删除：不写成 catalog-generated 成功')
+
+  const addedTool = tool('mcp__workspace__drive_list')
+  const addition = resolveCatalogChange([...history, addedTool], previousGroups)
+  eq(addition.mode, 'generate', '新增：仍触发生成')
+  eq(addition.needsGeneration, true, '新增：needsGeneration=true')
+  eq(addition.added.join(','), 'mcp__workspace__drive_list', '新增：added 含新工具')
+  eq(addition.removed.join(','), '', '新增：removed 为空')
+
+  const mixed = resolveCatalogChange([...withoutCalendar, addedTool], previousGroups)
+  eq(mixed.mode, 'generate', '增删同时出现：有新增就必须生成')
+  eq(mixed.needsGeneration, true, '增删同时出现：needsGeneration=true')
+  eq(mixed.added.join(','), 'mcp__workspace__drive_list', '增删同时出现：added 正确')
+  eq(mixed.removed.join(','), 'mcp__workspace__calendar_list', '增删同时出现：removed 正确')
+  check(mixed.catalog.warnings.some((warning) => warning.kind === 'catalog-stale-groups'), '增删同时出现：保持 stale 告警（后台生成）')
+
+  eq(resolveCatalogChange(withoutCalendar, undefined).mode, 'bootstrap', '无历史分组：走生成（bootstrap）')
+  eq(resolveCatalogChange(withoutCalendar, []).mode, 'bootstrap', '空历史分组：走生成（bootstrap）')
+  eq(resolveCatalogChange(withoutCalendar, undefined).needsGeneration, true, '无历史分组：needsGeneration=true')
+
+  const unchanged = resolveCatalogChange(history, previousGroups)
+  eq(unchanged.mode, 'local', '无增删（force 重建）：本地适配，不重复生成')
+  check(unchanged.catalog.warnings.some((warning) => warning.kind === 'catalog-removal-only' && warning.message.includes('没有新增')), '无增删：warning 说明未重新分组')
+
+  const fallback = resolveCatalogChange(withoutCalendar, previousGroups, { failureMessage: '本次生成未成功，暂用最近一次成功分组' })
+  eq(fallback.mode, 'fallback', '生成失败回退：mode=fallback')
+  eq(fallback.needsGeneration, false, '生成失败回退：不立刻再生成（调用方退避）')
+  eq(fallback.catalog.source, 'agent-stale', '生成失败回退：source=agent-stale')
+  check(
+    fallback.catalog.warnings.some((warning) => warning.kind === 'catalog-stale-groups' && warning.message.includes('生成未成功')),
+    '生成失败回退：告警透传失败原因（与纯删除共用同一个适配函数）',
+  )
+
+  eq(groupedToolNames(previousGroups).size, 6, 'groupedToolNames 兼容 members / tools 两种字段')
+  const diff = diffToolCatalog([...withoutCalendar, addedTool], previousGroups)
+  eq(diff.added.join(','), 'mcp__workspace__drive_list', 'diffToolCatalog：added')
+  eq(diff.removed.join(','), 'mcp__workspace__calendar_list', 'diffToolCatalog：removed')
+
+  // 被移除工具如果在 loaded 里：清掉残影（否则 pending / “全部已加载”判断会漂）。
+  const loaded = new Set(['mcp__workspace__calendar_list', 'dsh_session_manage', 'gone_tool'])
+  const pruned = pruneLoadedTools(loaded, withoutCalendar.map((entry) => entry.name))
+  eq(pruned.join(','), 'gone_tool,mcp__workspace__calendar_list', 'loaded 清理：剔除已被上游移除的工具')
+  check(!loaded.has('mcp__workspace__calendar_list') && loaded.has('dsh_session_manage'), 'loaded 清理：原地更新并保留仍在表中的工具')
+  check(removal.catalog.entries.every((entry) => entry.name !== 'mcp__workspace__calendar_list'), 'restriction 的 deny 由目录派生：不会残留“永远 deny 的不存在工具”')
+}
 
 console.log('== 激活 spec 适配器（subagent-compat）==')
 {
