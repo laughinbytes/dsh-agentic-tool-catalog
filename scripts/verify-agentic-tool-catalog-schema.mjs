@@ -319,6 +319,24 @@ console.log('== 目录变化：纯删除不启动第二个生成（真实 apply 
   eq(afterAddition.catalog.source, 'agent', '新增：生成成功后 source=agent')
   check(afterAddition.catalog.total === 7 && afterAddition.catalog.groups.length === 6, '新增：目录与分组覆盖新工具')
 
+  // 只改说明、工具名字不变：静默刷新目录说明（稳妥版）。不生成、不告警、lastOkAt 不变，
+  // 但 search_tools 必须能用新说明命中——这是“说明变化不会脏”的端到端证据。
+  const beforeDescription = await snapshot()
+  toolDefs = toolDefs.map((entry) => (entry.name === 'browser_open'
+    ? { ...entry, description: 'Open a browser page in kiosk mode' }
+    : entry))
+  emit('tools/change')
+  const afterDescription = await snapshot()
+  eq(generationStarts, 2, '说明变化：不启动生成')
+  eq(afterDescription.generation.runs, beforeDescription.generation.runs, '说明变化：generation.runs 不增加')
+  eq(afterDescription.generation.lastOkAt, beforeDescription.generation.lastOkAt, '说明变化：lastOkAt 不变')
+  eq(afterDescription.generation.descriptionRefreshes, 1, '说明变化：descriptionRefreshes 计数')
+  eq(afterDescription.generation.removalOnlySkips, 1, '说明变化：不计为纯删除跳过')
+  eq(afterDescription.catalog.source, beforeDescription.catalog.source, '说明变化：目录来源不变')
+  check(!afterDescription.warnings.some((warning) => warning.kind === 'catalog-removal-only'), '说明变化：不新增 removal-only 告警')
+  const kioskResult = await removalSearch.execute({ query: 'kiosk' }, { agent })
+  check(String(kioskResult).includes('browser_open'), '说明变化：search_tools 能按新说明命中工具')
+
   delete globalThis[SHARED_KEY]
   delete globalThis[REGISTRY_KEY]
 }

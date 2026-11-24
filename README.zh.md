@@ -25,6 +25,8 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 - **纯删除不浪费生成**：工具集只少不多（或没变化）时，用上次成功分组在进程内本地过滤即得到正确目录——
   不调模型、不起子代理；只有出现新工具才重新生成。观测：`generation.removalOnlySkips` 与带工具名的
   `catalog-removal-only` 告警；
+- **只改说明也能静默跟上**：工具名字没变、只有说明文字变了时，目录条目里的说明在原地刷新——不调模型、
+  不起子代理、不弹提示、分组不动，`search_tools` 仍能按新说明命中；观测：`generation.descriptionRefreshes`；
 - **可观测**：`catalog_status` 提供目录新鲜度/来源、分组、已加载、生成与存储健康状态。
 
 ## 工作机制
@@ -42,6 +44,7 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 
 - **新会话**在全局空闲时立即预热生成；**恢复的旧会话**在第一条用户消息/搜索时才生成；**目录新增工具**立即重新生成（优先增量）；
   **目录纯删除**（没有新工具）采用本地适配：按当前名单过滤上次成功分组、丢弃空组、不启动生成；
+  **只改说明**（名字不变）在原地刷新目录文字，同样不启动生成；
 - **默认同一时间只跑一个生成子代理**：进程级上限 `catalogMaxConcurrentGenerations`（默认 1，可配 1..4）；
   同一工具指纹的请求跨会话合并；已有生成在跑时预热直接跳过；失败后按指数退避（10 分钟 → 6 小时）重试，
   不再每次 prompt 都重起；
@@ -60,7 +63,7 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 | 工具 | 参数 | 行为 |
 |---|---|---|
 | `search_tools` | `query: string`，`limit?: number` | 按意图/关键词搜索目录（名字、描述、组名/组描述）；query 精确等于组名时整组加载（≤`groupMaxResults`）；加载后本会话即可调用；若当前是 PTC 预设，则在 `run_code` 程序里以 `tools.search_tools(...)` 调用 |
-| `catalog_status` | — | 只读 JSON：`catalog`（来源/新鲜度/来源类型/总数/分组/others）、`session`（已加载/待加载/restriction）、`generation`（次数、缓存命中、失败、超时、重试、去重、stale 次数、增量次数、纯删除跳过次数、清理的 loaded 工具数、已归档子会话、queue 活动/排队/合并/跳过、last error/ok、实例）、`storage`（模式/条数/上限/已淘汰）、`warnings` |
+| `catalog_status` | — | 只读 JSON：`catalog`（来源/新鲜度/来源类型/总数/分组/others）、`session`（已加载/待加载/restriction）、`generation`（次数、缓存命中、失败、超时、重试、去重、stale 次数、增量次数、纯删除跳过次数、清理的 loaded 工具数、说明刷新次数、已归档子会话、queue 活动/排队/合并/跳过、last error/ok、实例）、`storage`（模式/条数/上限/已淘汰）、`warnings` |
 
 系统提示里有一个 `catalog:note` 段：列出延迟分组和数量；初始化中/刷新中会额外写明一行状态。
 

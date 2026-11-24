@@ -62,6 +62,12 @@ prompt with `New tools = []`.
   Both `rebuild()` and the failed-generation fallback call the same local-adapt implementation; do not
   add a second copy.
 
+Description-only changes take a separate, silent path: `catalog.descriptionKeyOf()` (names +
+descriptions) is compared on every rebuild but is **not** part of the generation fingerprint, so rewording
+never starts a generation; `catalog.refreshToolDescriptions()` updates the entries in place (grouping,
+source and warnings preserved, `generation.descriptionRefreshes` counts it). Both suites pin this,
+including that the reworded term becomes searchable.
+
 Keep these tests green when touching `lib/generation.js`, `lib/generation-queue.js`,
 `lib/session-retire.js`, `lib/store.js` or the enrichment code in `lib/index.js`.
 

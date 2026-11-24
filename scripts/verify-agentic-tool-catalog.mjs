@@ -10,11 +10,13 @@ import {
   DEFAULT_RESIDENT,
   buildBootstrapCatalog,
   catalogSummary,
+  descriptionKeyOf,
   mcpInfo,
   normalizeGroupId,
   noteText,
   pruneLoadedTools,
   rankTools,
+  refreshToolDescriptions,
   residentMatcher,
   summarizeGroups,
   tokensOf,
@@ -282,6 +284,34 @@ console.log('== 目录变化判定：纯删除不触发重新分组 ==')
   eq(pruned.join(','), 'gone_tool,mcp__workspace__calendar_list', 'loaded 清理：剔除已被上游移除的工具')
   check(!loaded.has('mcp__workspace__calendar_list') && loaded.has('dsh_session_manage'), 'loaded 清理：原地更新并保留仍在表中的工具')
   check(removal.catalog.entries.every((entry) => entry.name !== 'mcp__workspace__calendar_list'), 'restriction 的 deny 由目录派生：不会残留“永远 deny 的不存在工具”')
+}
+
+console.log('== 工具说明变化：本地静默刷新（不重新分组）==')
+{
+  // 稳妥版：工具名字不变、只有说明变化时，只更新目录条目里的说明；不重新分组、
+  // 不叫模型、不写生成成功、不加告警，但 search_tools 能按新说明命中。
+  const before = [tool('browser_open', 'Open a browser page'), tool('dsh_session_manage', 'Manage sessions')]
+  const groups = [
+    { id: 'browser', description: 'Browser tools', members: ['browser_open'] },
+    { id: 'session', description: 'Session tools', members: ['dsh_session_manage'] },
+  ]
+  const catalog = catalogFromAgentGroups(before, groups)
+  const keyBefore = descriptionKeyOf(before)
+  check(keyBefore === descriptionKeyOf([...before].reverse()), '说明指纹：与工具顺序无关')
+  const after = [tool('browser_open', 'Open a browser page in kiosk mode'), before[1]]
+  check(descriptionKeyOf(after) !== keyBefore, '说明指纹：随说明变化')
+
+  const refreshed = refreshToolDescriptions(catalog, after)
+  eq(refreshed.changed, 1, '说明刷新：只更新实际变化的条目')
+  eq(refreshed.catalog.entries.find((entry) => entry.name === 'browser_open')?.description, 'Open a browser page in kiosk mode', '说明刷新：条目说明已更新')
+  eq(refreshed.catalog.entries.find((entry) => entry.name === 'browser_open')?.group, 'browser', '说明刷新：分组保持不变')
+  eq(refreshed.catalog.groups.map((group) => group.id).join(','), catalog.groups.map((group) => group.id).join(','), '说明刷新：组结构不变')
+  eq(refreshed.catalog.source, catalog.source, '说明刷新：来源不变（不冒充生成）')
+  eq(refreshed.catalog.warnings.map((warning) => warning.kind).join(','), catalog.warnings.map((warning) => warning.kind).join(','), '说明刷新：不新增告警')
+  check(rankTools(refreshed.catalog, 'kiosk').loaded.includes('browser_open'), '说明刷新后：search 能按新说明命中')
+  const noop = refreshToolDescriptions(catalog, before)
+  check(noop.changed === 0 && noop.catalog === catalog, '说明没变：返回原目录、零改动')
+  eq(refreshToolDescriptions(null, before).changed, 0, '空目录：说明刷新安全返回 0')
 }
 
 console.log('== 激活 spec 适配器（subagent-compat）==')

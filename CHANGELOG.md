@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.8 — 2026-11-24
+
+Fix: a tool whose description changed (same name) left stale text in the catalog, so `search_tools` could
+miss wording that only exists in the new description. 0.3.7 deliberately keeps grouping/generation keyed
+by tool names, so description-only changes never reached the catalog.
+
+- **Silent local description refresh.** `rebuild()` now also compares a description key
+  (`catalog.descriptionKeyOf()`: names + descriptions, deliberately **not** part of the generation/cache
+  fingerprint). When tool names are unchanged but a description differs, `refreshToolDescriptions()`
+  updates the existing catalog entries in place: grouping, source, warnings and the restriction stay
+  untouched, no generation starts, `lastGood`/`lastOkAt` do not move, and no warning is added
+  (`generation.descriptionRefreshes` counts refreshes). If an upstream MCP keeps rewording descriptions
+  on every token refresh, this is a cheap in-memory entry update, not a generation storm.
+- **Boundaries unchanged.** Tool names still decide grouping and generation: additions generate, removals
+  are applied locally (0.3.7), a missing history bootstraps + generates. The description key only triggers
+  the in-place refresh; a catalog that is bootstrapping/stale keeps its source and warnings, and a refresh
+  racing an in-flight generation is applied by the next rebuild.
+- **Tests.** Unit suite 152/152 (was 141/141): description key order-insensitivity/content sensitivity,
+  in-place entry refresh (grouping/source/warnings preserved, changed count, no-op and empty-catalog
+  cases), and `search_tools` ranking against the refreshed description. Real-package suite 73/73 (was
+  65/65): after removing and re-adding tools in the fake-host session, a description-only `tools/change`
+  must not start a child, must not move `generation.runs`/`lastOkAt`, must not count as a removal skip,
+  and the reworded term must be searchable afterwards. Activation matrix 33/33 and compliance A=0 B=0
+  unchanged; `npm run test:presentation` passes.
+- **Scope.** Only this repository changed; no package was published.
+
 ## 0.3.7 — 2026-11-24
 
 Fix: catalog changes that only *removed* tools still spawned real `agentic-tool-catalog generation`
