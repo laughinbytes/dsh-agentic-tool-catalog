@@ -68,6 +68,34 @@ never starts a generation; `catalog.refreshToolDescriptions()` updates the entri
 source and warnings preserved, `generation.descriptionRefreshes` counts it). Both suites pin this,
 including that the reworded term becomes searchable.
 
+## Change stabilization regression
+
+`tools/change` is debounced by a stabilization window (`lib/change-buffer.js`: pure module with injectable
+clock/timers; wired in `lib/index.js`). The rebuild runs only after the last event is `catalogStabilizeMs`
+old (default 2500 ms); a hard `catalogStabilizeMaxMs` cap (default 30000 ms) prevents starvation, settling
+synchronously at the cap when the event loop was delayed. The settle callback calls `syncAll()`, which
+re-reads the tool snapshot inside `rebuild()` — a snapshot captured at scheduling time is never reused.
+While a window is pending, non-forced `sync()` (including `search_tools`) and `ensureEnrichment()` are
+deferred; forced paths (new agent, preset switch, Storage hydrate) are unchanged. `catalogStabilizeMs: 0`
+disables the debounce (immediate rebuild per event, the pre-0.3.9 behavior).
+
+This exists because a bridge MCP plugin can drop and re-register its tools on every token refresh
+(Google Workspace: 22 tools flipped one by one in ~1 s; a day produced 21 generation children — see
+0.3.9 in `CHANGELOG.md`).
+
+- Unit (`scripts/verify-agentic-tool-catalog.mjs`): fake clock — a burst of two events settles/generates
+  once, a later batch settles again, sustained churn settles exactly at the hard cap (including the
+  synchronous settle-at-cap path), cancel/flush, status fields.
+- End to end (`scripts/verify-agentic-tool-catalog-schema.mjs`, 60 ms / 150 ms test window): pending
+  without rebuilding, a prompt inside the window starts no generation, two back-to-back changes produce
+  exactly one generation whose snapshot contains both new tools, window-internal `search_tools` misses
+  the new tool and hits it after settle, removal-only still applies locally, description refresh still
+  silent, and a restored, not-yet-activated session gets its cached same-fingerprint catalog applied
+  after the window settles (the deferred-enrichment resume path).
+- Accepted side effects: a new tool is searchable after the window (≤2.5 s idle; ≤30 s only under
+  sustained churn) plus generation time; the window serves `search_tools` and the system-prompt note from
+  the previous catalog. If either default changes, update the README trade-off text and this section.
+
 Keep these tests green when touching `lib/generation.js`, `lib/generation-queue.js`,
 `lib/session-retire.js`, `lib/store.js` or the enrichment code in `lib/index.js`.
 

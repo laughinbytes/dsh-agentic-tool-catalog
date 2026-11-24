@@ -77,7 +77,7 @@ if (NEED_ZOD) {
 }
 
 mkdirSync(PLUGIN_DIR, { recursive: true })
-for (const file of ['index.js', 'catalog.js', 'generation.js', 'generation-queue.js', 'session-retire.js', 'store.js', 'subagent-compat.js']) {
+for (const file of ['index.js', 'catalog.js', 'change-buffer.js', 'generation.js', 'generation-queue.js', 'session-retire.js', 'store.js', 'subagent-compat.js']) {
   cpSync(join(PLUGIN, 'lib', file), join(PLUGIN_DIR, file))
 }
 
@@ -126,6 +126,8 @@ if (defaults) {
   eq(defaults.catalogCacheMaxEntries, 64, '默认 catalogCacheMaxEntries=64')
   eq(defaults.catalogArchiveChildSessions, true, '默认 catalogArchiveChildSessions=true')
   eq(defaults.catalogResetNonce, '', '默认 catalogResetNonce 为空')
+  eq(defaults.catalogStabilizeMs, 2500, '默认 catalogStabilizeMs=2500（tools/change 稳定窗口开）')
+  eq(defaults.catalogStabilizeMaxMs, 30000, '默认 catalogStabilizeMaxMs=30000（硬上限）')
   check(!('strategy' in defaults), 'Config 无 strategy 字段')
   check(!('strategyFile' in defaults), 'Config 无 strategyFile')
 }
@@ -230,6 +232,12 @@ console.log('== 目录变化：纯删除不启动第二个生成（真实 apply 
     session: { header: { id: 'session-removal-test', origin: 'main', createdAt: Date.now() + 1000 } },
     ctx: agentCtx,
   }
+  // 恢复会话（createdAt 早于插件启动）：用于验证“窗口内首次 prompt 被推迟、结算后补生成”。
+  const restoredAgent = {
+    session: { header: { id: 'session-restored-test', origin: 'main', createdAt: 1 } },
+    ctx: agentCtx,
+  }
+  const agentsList = [agent, restoredAgent]
 
   const registrations = []
   const handlers = new Map()
@@ -241,7 +249,7 @@ console.log('== 目录变化：纯删除不启动第二个生成（真实 apply 
       schemas() { return toolDefs },
     },
     get(name) {
-      if (name === 'agents') return { list: () => [agent] }
+      if (name === 'agents') return { list: () => agentsList }
       if (name === 'subagents') return host
       return undefined
     },
@@ -257,9 +265,15 @@ console.log('== 目录变化：纯删除不启动第二个生成（真实 apply 
     inject() {},
     logger: { warn() {} },
   }
-  plugin.apply(removalCtx, plugin.Config({ catalogTimeoutMs: 5000, catalogProvider: 'spawn' }))
-  const emit = (event) => {
-    for (const listener of handlers.get(event) ?? []) listener({ agent })
+  plugin.apply(removalCtx, plugin.Config({
+    catalogTimeoutMs: 5000,
+    catalogProvider: 'spawn',
+    // 稳定窗口调小以便测试：窗口 60ms、硬上限 150ms。
+    catalogStabilizeMs: 60,
+    catalogStabilizeMaxMs: 150,
+  }))
+  const emit = (event, target = agent) => {
+    for (const listener of handlers.get(event) ?? []) listener({ agent: target })
   }
   const removalStatus = registrations.find((definition) => definition.name === 'catalog_status')
   const removalSearch = registrations.find((definition) => definition.name === 'search_tools')
@@ -272,6 +286,7 @@ console.log('== 目录变化：纯删除不启动第二个生成（真实 apply 
     }
     throw new Error(`等待超时：${label}`)
   }
+  const waitSettled = () => waitFor(async () => !(await snapshot()).generation.stabilize.pending, '稳定窗口结算')
 
   await waitFor(async () => (await snapshot()).generation.lastOkAt !== null, '首次生成完成')
   const generated = await snapshot()
@@ -284,15 +299,25 @@ console.log('== 目录变化：纯删除不启动第二个生成（真实 apply 
   const loadedBefore = await snapshot()
   check(loadedBefore.session.loaded.includes('mcp__workspace__calendar_list'), '加载：search_tools 把 calendar 工具记入 loaded')
 
-  // 模拟上游 token 刷新让 calendar 工具消失（只少不多）。
+  // ── 场景 1：纯删除走稳定窗口 → 本地适配，不生成 ─────────────────────────
   const beforeRemoval = await snapshot()
   toolDefs = toolDefs.filter((entry) => entry.name !== 'mcp__workspace__calendar_list')
   emit('tools/change')
+  const pendingRemoval = await snapshot()
+  eq(pendingRemoval.generation.stabilize.pending, true, '稳定窗口：tools/change 后进入等待（pending）')
+  eq(pendingRemoval.generation.stabilize.windowMs, 60, '稳定窗口：使用配置的窗口长度')
+  eq(pendingRemoval.generation.stabilize.maxMs, 150, '稳定窗口：使用配置的硬上限')
+  eq(pendingRemoval.catalog.total, beforeRemoval.catalog.total, '稳定窗口：窗口内不重建目录（仍是上一版）')
+  emit('agent/inbox/claimed')
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  eq(generationStarts, 1, '稳定窗口：窗口内的 prompt 不会启动生成')
+  await waitSettled()
   const afterRemoval = await snapshot()
+  eq(afterRemoval.generation.stabilize.pending, false, '稳定窗口：结算后 pending 清零')
   eq(generationStarts, 1, '纯删除：没有启动第二个生成子代理（真实 apply 路径）')
   eq(afterRemoval.generation.runs, beforeRemoval.generation.runs, '纯删除：generation.runs 不增加')
   eq(afterRemoval.generation.lastOkAt, beforeRemoval.generation.lastOkAt, '纯删除：lastOkAt 不被刷新（本次没有生成）')
-  eq(afterRemoval.generation.removalOnlySkips, 1, '纯删除：removalOnlySkips 计数')
+  eq(afterRemoval.generation.removalOnlySkips, 2, '纯删除：removalOnlySkips 计数（两个会话各一次本地适配）')
   eq(afterRemoval.catalog.source, 'agent-adapted', '纯删除：source=agent-adapted（不冒充生成结果）')
   eq(afterRemoval.catalog.freshness, 'fresh', '纯删除：没有“刷新中/待刷新”状态（本来不需要生成）')
   eq(afterRemoval.catalog.total, 6, '纯删除：目录条目数跟随工具表')
@@ -307,35 +332,53 @@ console.log('== 目录变化：纯删除不启动第二个生成（真实 apply 
   // 空闲会话的下一次 prompt 是现场触发点（agent/inbox/claimed → ensureEnrichment）：
   // needsEnrichment 必须已是 false，不能把生成补起来（否则 50 分钟一次的 prompt 会继续空跑）。
   emit('agent/inbox/claimed')
-  await new Promise((resolve) => setTimeout(resolve, 50))
+  await new Promise((resolve) => setTimeout(resolve, 20))
   eq(generationStarts, 1, '纯删除后下一次 prompt 不会补起生成（needsEnrichment=false）')
 
-  // 之后再新增一个工具：added 非空，必须重新生成。
+  // ── 场景 2：连续两次变化（两次 tools/change）只生成一次，且用稳定快照 ────────
   toolDefs = [...toolDefs, { name: 'mcp__workspace__tasks_list', description: 'List tasks' }]
   emit('tools/change')
-  await waitFor(async () => (await snapshot()).generation.runs >= 2 && (await snapshot()).catalog.source === 'agent', '新增后的生成完成')
+  toolDefs = [...toolDefs, { name: 'mcp__workspace__tasks_create', description: 'Create a task' }]
+  emit('tools/change')
+  const pendingAddition = await snapshot()
+  eq(pendingAddition.generation.stabilize.pending, true, '连续变化：两次事件合并到同一稳定窗口')
+  eq(pendingAddition.catalog.total, 6, '连续变化：窗口内目录仍是上一版')
+  const duringAdditionSearch = await removalSearch.execute({ query: 'tasks' }, { agent })
+  check(String(duringAdditionSearch).startsWith('No deferred tool matches'), '稳定窗口：窗口内 search_tools 搜不到新工具（已评估的可接受副作用）')
+  await waitFor(async () => (await snapshot()).generation.runs >= 2 && (await snapshot()).catalog.source === 'agent', '稳定后新增生成完成')
   const afterAddition = await snapshot()
-  eq(generationStarts, 2, '新增：重新启动生成（added 非空）')
+  eq(generationStarts, 2, '连续两次变化：只启动一次生成（合并批次）')
   eq(afterAddition.catalog.source, 'agent', '新增：生成成功后 source=agent')
-  check(afterAddition.catalog.total === 7 && afterAddition.catalog.groups.length === 6, '新增：目录与分组覆盖新工具')
+  eq(afterAddition.catalog.total, 8, '新增：稳定快照含两次变化的两个新工具（8 个工具）')
+  eq(afterAddition.catalog.groups.length, 6, '新增：分组覆盖两个新工具')
 
-  // 只改说明、工具名字不变：静默刷新目录说明（稳妥版）。不生成、不告警、lastOkAt 不变，
-  // 但 search_tools 必须能用新说明命中——这是“说明变化不会脏”的端到端证据。
+  // ── 场景 3：说明变化也在窗口结算后静默刷新 ───────────────────────────────
   const beforeDescription = await snapshot()
   toolDefs = toolDefs.map((entry) => (entry.name === 'browser_open'
     ? { ...entry, description: 'Open a browser page in kiosk mode' }
     : entry))
   emit('tools/change')
+  const pendingDescription = await snapshot()
+  eq(pendingDescription.generation.stabilize.pending, true, '说明变化：同样走稳定窗口')
+  const duringDescriptionSearch = await removalSearch.execute({ query: 'kiosk' }, { agent })
+  check(String(duringDescriptionSearch).startsWith('No deferred tool matches'), '稳定窗口：说明刷新前按新说明搜不到（已评估的可接受副作用）')
+  await waitSettled()
   const afterDescription = await snapshot()
   eq(generationStarts, 2, '说明变化：不启动生成')
   eq(afterDescription.generation.runs, beforeDescription.generation.runs, '说明变化：generation.runs 不增加')
   eq(afterDescription.generation.lastOkAt, beforeDescription.generation.lastOkAt, '说明变化：lastOkAt 不变')
-  eq(afterDescription.generation.descriptionRefreshes, 1, '说明变化：descriptionRefreshes 计数')
-  eq(afterDescription.generation.removalOnlySkips, 1, '说明变化：不计为纯删除跳过')
+  eq(afterDescription.generation.descriptionRefreshes, beforeDescription.generation.descriptionRefreshes + 2, '说明变化：两个会话各静默刷新一次（descriptionRefreshes +2）')
+  eq(afterDescription.generation.removalOnlySkips, beforeDescription.generation.removalOnlySkips, '说明变化：不计为纯删除跳过')
   eq(afterDescription.catalog.source, beforeDescription.catalog.source, '说明变化：目录来源不变')
   check(!afterDescription.warnings.some((warning) => warning.kind === 'catalog-removal-only'), '说明变化：不新增 removal-only 告警')
   const kioskResult = await removalSearch.execute({ query: 'kiosk' }, { agent })
-  check(String(kioskResult).includes('browser_open'), '说明变化：search_tools 能按新说明命中工具')
+  check(String(kioskResult).includes('browser_open'), '说明变化：结算后 search_tools 能按新说明命中工具')
+
+  // 恢复会话（未激活、needsEnrichment）在稳定窗口结算后被补上同指纹缓存目录——
+  // 这是 resumeDeferredEnrichment 的回归：没有它，结算后的 rebuild 会走早退分支而错过补发。
+  const restoredSnapshot = JSON.parse(await removalStatus.execute({}, { agent: restoredAgent }))
+  eq(restoredSnapshot.catalog.source, 'agent', '结算后补发：恢复会话拿到同指纹缓存目录（source=agent）')
+  eq(generationStarts, 2, '结算后补发：复用缓存，不额外生成')
 
   delete globalThis[SHARED_KEY]
   delete globalThis[REGISTRY_KEY]

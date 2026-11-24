@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.3.9 — 2026-11-24
+
+Fix: bridge MCP plugins that drop and re-register their tools on reconnect made the catalog compute
+(and sometimes generate) on transient, incomplete tool snapshots. Observed locally: the Google Workspace
+bridge reconnects on every token refresh and removes then re-adds 22 tools one by one (~1 s); catalog SSE
+snapshots captured the full sequence (gmail 10→…→0, calendar 8→…→0, time 3→0, then recovery). The
+`tools/change` handler rebuilt on the first event, so a day produced 21 generation children (16
+pure-removal skips + 5 “one new tool” runs). 0.3.7 makes pure removals free, but the general fix is to
+wait for the tool list to settle before computing anything.
+
+- **Stability window for `tools/change`.** New pure module `lib/change-buffer.js`
+  (`createChangeDebouncer`, injectable clock/timers): `tools/change` now only schedules; the rebuild
+  runs after `catalogStabilizeMs` (default **2500 ms**) of quiet, and every further event resets the
+  window. The settle callback calls `syncAll()`, which re-reads the tool snapshot in `rebuild()`
+  (`definitionsOf`) — a mid-jitter snapshot is never reused.
+- **Hard cap.** A batch is settled at the latest `catalogStabilizeMaxMs` (default **30000 ms**) after its
+  *first* event, even while events keep arriving (at the cap it settles synchronously instead of
+  re-arming, so sustained churn cannot starve it). Worst case under continuous flapping: at most one
+  rebuild/generation per cap.
+- **Window gating.** While a window is pending, non-forced `sync()` (including `search_tools`) and
+  `ensureEnrichment()` (prompt/search-triggered generation) are deferred until the settle; forced paths
+  (new agent, preset switch, Storage hydrate) are unchanged. A pending window is cancelled on plugin
+  reload. `catalog_status.generation.stabilize` reports `{ windowMs, maxMs, pending, pendingSince,
+  deadlineAt }`.
+- **Configuration.** `catalogStabilizeMs` (default 2500; `0` disables debounce and restores immediate
+  rebuilds) and `catalogStabilizeMaxMs` (default 30000, clamped to >= the window).
+- **Accepted trade-offs (evaluated, not accidental).** A brand-new tool becomes visible to
+  `search_tools` after the window (≤2.5 s idle; ≤30 s only under sustained churn), plus the normal
+  generation time; during a pending window `search_tools` and the `catalog:note` system-prompt section
+  use the previous catalog (a removed tool may linger briefly; a just-added tool is not searchable yet);
+  a search landing inside the window is answered from the previous catalog instead of forcing a
+  mid-jitter rebuild. Chosen 2500 ms because the observed reconnect burst is ~1 s and DSH-side event
+  settling adds margin; 30 s is a safety bound that healthy operation never reaches. Removal-only skips
+  (0.3.7) and silent description refresh (0.3.8) are unchanged and still apply to the settled snapshot.
+- **Tests.** Unit suite 178/178 (was 152/152), using a fake clock: a burst of two events settles/generates
+  once, a later batch triggers again, sustained churn settles exactly at the hard cap (including the
+  timer-delayed “settle synchronously at cap” path), cancel/flush semantics, status fields.
+  Real-package suite 89/89 (was 73/73): with a 60 ms/150 ms test window, `tools/change` enters pending
+  without rebuilding; a prompt inside the window starts no generation; removal settles locally and
+  never generates; two back-to-back changes produce exactly one generation whose snapshot contains both
+  new tools (8 tools / 6 groups); `search_tools` inside the window misses the new tool and hits it after
+  settle; description changes still refresh silently after settle; a restored, not-yet-activated session
+  gets its cached same-fingerprint catalog applied after the window settles (the deferred-enrichment
+  resume path — verified by disabling that call and watching the assertion fail). Activation matrix 33/33
+  and compliance A=0 B=0 unchanged; `npm run test:presentation` passes.
+- **Scope / release state.** Committed locally only; **not published** (npm `latest`/`next` remain
+  0.3.6), no tag, no GitHub Release, no profile install — awaiting review.
+
 ## 0.3.8 — 2026-11-24
 
 Fix: a tool whose description changed (same name) left stale text in the catalog, so `search_tools` could

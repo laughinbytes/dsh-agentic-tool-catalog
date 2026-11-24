@@ -36,6 +36,13 @@ by `search_tools` when a task actually needs them.
 - **Description-only changes stay searchable, silently**: when a tool's description changes but its name
   does not, the catalog entries are refreshed in place (no model, no child session, no warning, grouping
   untouched) so `search_tools` matches the new wording. Counted as `generation.descriptionRefreshes`.
+- **Change bursts are stabilized before computing**: bridge plugins that drop and re-register their tools
+  on reconnect (a Google Workspace bridge flips 22 tools in ~1 s) no longer trigger one computation per
+  event. `tools/change` is debounced by `catalogStabilizeMs` (default **2.5 s**, reset by every event,
+  hard cap `catalogStabilizeMaxMs`, default **30 s**), and the rebuild reads the tool snapshot **after**
+  the list settles — never a mid-jitter snapshot. During the window, `search_tools` and the prompt note
+  use the previous catalog (a just-added tool appears after the window; a removed tool may linger
+  briefly). Set `catalogStabilizeMs: 0` to disable. State: `catalog_status.generation.stabilize`.
 
 - **Observable**: `catalog_status` exposes catalog freshness/origin, groups, loaded tools, generation and
   storage health.
@@ -58,6 +65,8 @@ agent needs tools
   (incremental first). A change that only removes tools is applied locally: the last successful grouping is
   filtered against the current tool list, empty groups are dropped, and no generation runs. A change that
   only rewords tool descriptions refreshes the directory text in place — also without a generation.
+  Bursts of `tools/change` are batched by the stabilization window, so a reconnect that flips tools
+  several times produces one rebuild (and at most one generation) on the settled snapshot.
 - **One generator at a time by default**: at most `catalogMaxConcurrentGenerations` (default 1,
   configurable 1..4) real sub-agent runs exist app-wide. Requests for the same tool fingerprint are
   merged across sessions, pre-warm is skipped
@@ -81,7 +90,7 @@ agent needs tools
 | Tool | Parameters | Behavior |
 |---|---|---|
 | `search_tools` | `query: string`, `limit?: number` | Search the catalog by intent/keywords (name, description, group id/description). Exact group-name queries load the whole group (up to `groupMaxResults`). Loaded tools become callable for the rest of the session (directly, or as `tools.<name>` inside `run_code`). |
-| `catalog_status` | — | Read-only JSON: `catalog` (source/freshness/origin/total/groups/others), `session` (loaded/pending/restriction), `generation` (runs, cache hits, failures, timeouts, retries, dedupe, stale uses, incremental runs, removal-only skips, pruned loaded tools, description refreshes, archived child sessions, queue active/pending/joined/skipped, last error/ok, instance), `storage` (mode/entries/maxEntries/evicted), `warnings`. |
+| `catalog_status` | — | Read-only JSON: `catalog` (source/freshness/origin/total/groups/others), `session` (loaded/pending/restriction), `generation` (runs, cache hits, failures, timeouts, retries, dedupe, stale uses, incremental runs, removal-only skips, pruned loaded tools, description refreshes, stabilization window state, archived child sessions, queue active/pending/joined/skipped, last error/ok, instance), `storage` (mode/entries/maxEntries/evicted), `warnings`. |
 
 A short `catalog:note` system-prompt section lists deferred groups and counts; during bootstrap/stale states it
 adds one explicit line explaining that the catalog is initializing/refreshing.
@@ -104,6 +113,8 @@ adds one explicit line explaining that the catalog is initializing/refreshing.
     catalogCacheMaxEntries: 64 # max cached tool fingerprints in official Storage
     catalogArchiveChildSessions: true # archive each generation child session after its attempt
     catalogResetNonce: ''    # cache namespace; change it to force regeneration
+    catalogStabilizeMs: 2500 # tools/change stabilization window; 0 = rebuild immediately per event
+    catalogStabilizeMaxMs: 30000 # hard cap for a continuously changing tool list
 ```
 
 Most profiles need no configuration. New plugins/MCP servers are picked up automatically on the next catalog

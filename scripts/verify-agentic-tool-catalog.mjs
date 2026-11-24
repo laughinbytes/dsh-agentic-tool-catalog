@@ -38,6 +38,7 @@ import {
   isActivationShapeError,
 } from '../lib/subagent-compat.js'
 import { createGenerationQueue, SKIP_GENERATION } from '../lib/generation-queue.js'
+import { createChangeDebouncer, DEFAULT_STABILIZE_MAX_MS, DEFAULT_STABILIZE_MS } from '../lib/change-buffer.js'
 
 let passed = 0
 let failed = 0
@@ -312,6 +313,137 @@ console.log('== 工具说明变化：本地静默刷新（不重新分组）==')
   const noop = refreshToolDescriptions(catalog, before)
   check(noop.changed === 0 && noop.catalog === catalog, '说明没变：返回原目录、零改动')
   eq(refreshToolDescriptions(null, before).changed, 0, '空目录：说明刷新安全返回 0')
+}
+
+console.log('== tools/change 稳定窗口（去抖）==')
+{
+  // 假时钟：可精确推进时间，验证窗口/硬上限语义（生产用 Date.now + setTimeout）。
+  const createFakeClock = (start = 0) => {
+    let now = start
+    let nextId = 0
+    const timers = new Map()
+    return {
+      now: () => now,
+      setTimeout: (fn, delay) => {
+        const id = ++nextId
+        timers.set(id, { at: now + Math.max(0, delay), fn })
+        return { id }
+      },
+      clearTimeout: (timer) => {
+        if (timer !== undefined) timers.delete(timer.id)
+      },
+      advance(ms) {
+        const target = now + ms
+        for (;;) {
+          const due = [...timers.entries()]
+            .filter(([, timer]) => timer.at <= target)
+            .sort((a, b) => a[1].at - b[1].at)[0]
+          if (due === undefined) break
+          timers.delete(due[0])
+          now = due[1].at
+          due[1].fn()
+        }
+        now = target
+      },
+      /** 只移动时间、不触发 timer（模拟事件循环被拖住，新事件先到）。 */
+      jump(ms) { now += ms },
+      pending: () => timers.size,
+    }
+  }
+  const clockOptions = (clock) => ({ now: clock.now, setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout })
+
+  eq(DEFAULT_STABILIZE_MS, 2500, '稳定窗口：默认窗口 2500ms')
+  eq(DEFAULT_STABILIZE_MAX_MS, 30000, '稳定窗口：默认硬上限 30000ms')
+  eq(createChangeDebouncer({ windowMs: 500, maxMs: 10 }).status().maxMs, 500, '稳定窗口：硬上限自动夹到 >= 窗口长度')
+
+  // 1) 连续两次变化只结算（生成）一次；稳定后再变化正常触发下一批。
+  {
+    const clock = createFakeClock()
+    let settled = 0
+    let settledAt = -1
+    const debouncer = createChangeDebouncer({
+      windowMs: 100,
+      maxMs: 500,
+      onSettled: () => { settled += 1; settledAt = clock.now() },
+      ...clockOptions(clock),
+    })
+    eq(debouncer.schedule(), 100, '稳定窗口：首次事件等待完整窗口')
+    clock.advance(50)
+    eq(debouncer.schedule(), 100, '稳定窗口：新事件重置窗口')
+    clock.advance(99)
+    eq(settled, 0, '稳定窗口：窗口未满不结算')
+    eq(debouncer.status().pending, true, '稳定窗口：pending 可观测')
+    eq(debouncer.status().windowMs, 100, '稳定窗口：status.windowMs')
+    eq(debouncer.status().maxMs, 500, '稳定窗口：status.maxMs')
+    eq(debouncer.status().pendingSince, 0, '稳定窗口：pendingSince 是批次首事件时刻')
+    eq(debouncer.status().deadlineAt, 500, '稳定窗口：deadlineAt = 首事件 + 硬上限')
+    clock.advance(1)
+    eq(settled, 1, '稳定窗口：连续两次变化只结算（生成）一次')
+    eq(settledAt, 150, '稳定窗口：在最后一次事件后满窗口结算')
+    eq(debouncer.status().pending, false, '稳定窗口：结算后 pending=false')
+    clock.advance(1000)
+    eq(settled, 1, '稳定窗口：结算后不再重复触发')
+    debouncer.schedule()
+    clock.advance(100)
+    eq(settled, 2, '稳定窗口：稳定后的新变化正常触发下一批（新增工具仍会生成）')
+  }
+
+  // 2) 持续抖动：窗口一直被重置，但硬上限到点必须结算一次（防饿死）。
+  {
+    const clock = createFakeClock()
+    const settledAt = []
+    const debouncer = createChangeDebouncer({
+      windowMs: 100,
+      maxMs: 250,
+      onSettled: () => settledAt.push(clock.now()),
+      ...clockOptions(clock),
+    })
+    for (let elapsed = 0; elapsed <= 240; elapsed += 20) {
+      debouncer.schedule()
+      clock.advance(20)
+    }
+    eq(settledAt.join(','), '250', '稳定窗口：持续抖动在硬上限处结算一次（不饿死）')
+    eq(debouncer.status().pending, false, '稳定窗口：硬上限结算后没有挂起窗口')
+    clock.advance(1000)
+    eq(settledAt.join(','), '250', '稳定窗口：硬上限结算后不再重复触发')
+  }
+
+  // 3) 事件循环被拖住（timer 没来得及跑）时，到达上限的新事件同步结算。
+  {
+    const clock = createFakeClock()
+    const settledAt = []
+    const debouncer = createChangeDebouncer({
+      windowMs: 100,
+      maxMs: 150,
+      onSettled: () => settledAt.push(clock.now()),
+      ...clockOptions(clock),
+    })
+    debouncer.schedule()
+    clock.jump(200)
+    eq(debouncer.schedule(), 0, '稳定窗口：到达硬上限后的事件同步结算（返回 0）')
+    eq(settledAt.join(','), '200', '稳定窗口：硬上限同步结算，不等 timer（防饿死兜底）')
+  }
+
+  // 4) cancel 不结算（插件卸载），flush 立即结算。
+  {
+    const clock = createFakeClock()
+    let settled = 0
+    const debouncer = createChangeDebouncer({
+      windowMs: 100,
+      maxMs: 500,
+      onSettled: () => { settled += 1 },
+      ...clockOptions(clock),
+    })
+    debouncer.schedule()
+    debouncer.cancel()
+    clock.advance(1000)
+    eq(settled, 0, '稳定窗口：cancel 后不结算（插件卸载不触发重建）')
+    eq(debouncer.status().pending, false, '稳定窗口：cancel 后 pending=false')
+    debouncer.schedule()
+    eq(debouncer.flush(), true, '稳定窗口：flush 立即结算挂起窗口')
+    eq(settled, 1, '稳定窗口：flush 触发一次结算')
+    eq(debouncer.flush(), false, '稳定窗口：没有挂起窗口时 flush 不重复结算')
+  }
 }
 
 console.log('== 激活 spec 适配器（subagent-compat）==')

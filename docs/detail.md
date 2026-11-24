@@ -34,5 +34,7 @@ plugin. The catalog saves context, not by making tasks cheaper to run.
 - Generation is serialized app-wide by default (one real generator at a time). A timed-out generation is
   cancelled immediately, and each background child session is archived afterwards, so generations
   never pile up in your session list.
+- Tool lists that flip while a plugin reconnects are stabilized first: the catalog updates after a ~2.5 s
+  quiet window (hard cap 30 s), so a bridge re-adding its tools does not trigger a generation per event.
 - If a refresh fails, the last successful catalog stays active and retries with exponential backoff;
   it never silently hides tools.

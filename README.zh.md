@@ -27,6 +27,12 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
   `catalog-removal-only` 告警；
 - **只改说明也能静默跟上**：工具名字没变、只有说明文字变了时，目录条目里的说明在原地刷新——不调模型、
   不起子代理、不弹提示、分组不动，`search_tools` 仍能按新说明命中；观测：`generation.descriptionRefreshes`；
+- **抖动先稳定再算**：桥接插件（如 Google Workspace）每次 token 刷新会重连并逐个摘/挂工具（约 1 秒），
+  现在 `tools/change` 先去抖：`catalogStabilizeMs`（默认 **2.5 秒**，期间再来事件就重置）后才重建，
+  且重建时重新读取工具快照——绝不用抖动中间态；硬上限 `catalogStabilizeMaxMs`（默认 **30 秒**），
+  持续抖动也到点必算一次。窗口内 `search_tools` 和系统提示用上一版目录（新工具窗口结束后可见，
+  被移除工具可能短暂残留）；`catalogStabilizeMs: 0` 可关闭去抖；状态见
+  `catalog_status.generation.stabilize`；
 - **可观测**：`catalog_status` 提供目录新鲜度/来源、分组、已加载、生成与存储健康状态。
 
 ## 工作机制
@@ -45,6 +51,7 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 - **新会话**在全局空闲时立即预热生成；**恢复的旧会话**在第一条用户消息/搜索时才生成；**目录新增工具**立即重新生成（优先增量）；
   **目录纯删除**（没有新工具）采用本地适配：按当前名单过滤上次成功分组、丢弃空组、不启动生成；
   **只改说明**（名字不变）在原地刷新目录文字，同样不启动生成；
+  **连续抖动**（多个 `tools/change` 事件）在稳定窗口内合并成一次重建（最多一次生成），使用结算时的快照；
 - **默认同一时间只跑一个生成子代理**：进程级上限 `catalogMaxConcurrentGenerations`（默认 1，可配 1..4）；
   同一工具指纹的请求跨会话合并；已有生成在跑时预热直接跳过；失败后按指数退避（10 分钟 → 6 小时）重试，
   不再每次 prompt 都重起；
@@ -63,7 +70,7 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
 | 工具 | 参数 | 行为 |
 |---|---|---|
 | `search_tools` | `query: string`，`limit?: number` | 按意图/关键词搜索目录（名字、描述、组名/组描述）；query 精确等于组名时整组加载（≤`groupMaxResults`）；加载后本会话即可调用；若当前是 PTC 预设，则在 `run_code` 程序里以 `tools.search_tools(...)` 调用 |
-| `catalog_status` | — | 只读 JSON：`catalog`（来源/新鲜度/来源类型/总数/分组/others）、`session`（已加载/待加载/restriction）、`generation`（次数、缓存命中、失败、超时、重试、去重、stale 次数、增量次数、纯删除跳过次数、清理的 loaded 工具数、说明刷新次数、已归档子会话、queue 活动/排队/合并/跳过、last error/ok、实例）、`storage`（模式/条数/上限/已淘汰）、`warnings` |
+| `catalog_status` | — | 只读 JSON：`catalog`（来源/新鲜度/来源类型/总数/分组/others）、`session`（已加载/待加载/restriction）、`generation`（次数、缓存命中、失败、超时、重试、去重、stale 次数、增量次数、纯删除跳过次数、清理的 loaded 工具数、说明刷新次数、稳定窗口状态、已归档子会话、queue 活动/排队/合并/跳过、last error/ok、实例）、`storage`（模式/条数/上限/已淘汰）、`warnings` |
 
 系统提示里有一个 `catalog:note` 段：列出延迟分组和数量；初始化中/刷新中会额外写明一行状态。
 
@@ -85,6 +92,8 @@ Agentic Tool Catalog 换一种做法：上下文里只保留一份**目录**。�
     catalogCacheMaxEntries: 64 # 官方 Storage 最多保留的目录指纹数
     catalogArchiveChildSessions: true # 每次生成尝试结束后归档子会话
     catalogResetNonce: ''    # 缓存命名空间；改它可强制重新生成
+    catalogStabilizeMs: 2500 # tools/change 稳定窗口；0 = 关闭去抖（每个事件立即重建）
+    catalogStabilizeMaxMs: 30000 # 持续抖动时的硬上限
 ```
 
 大多数情况下**不需要任何配置**；新装插件/MCP 在目录变化时自动收编；只有"某工具必须永远可见"时才需要
